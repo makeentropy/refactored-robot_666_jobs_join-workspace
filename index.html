@@ -226,6 +226,41 @@
     border-radius:var(--r-sm);cursor:pointer;transition:.15s;
   }
   .mini-btn:hover{border-color:var(--purple);color:var(--purple)}
+  .keypair-panel{
+    margin-top:14px;border:1px solid #d6ccea;background:var(--purple-bg);
+    border-radius:var(--r-sm);padding:14px 16px;animation:fade .25s ease;
+  }
+  .keypair-panel .kp-head{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin-bottom:10px;
+  }
+  .keypair-panel .kp-title{
+    font-size:12px;font-weight:600;color:var(--purple);
+    display:flex;align-items:center;gap:6px;
+  }
+  .keypair-panel .kp-title::before{
+    content:'';width:7px;height:7px;border-radius:50%;background:var(--purple);
+  }
+  .keypair-panel .kp-warn{
+    font-size:11px;color:var(--amber);background:var(--amber-bg);
+    padding:5px 10px;border-radius:4px;margin-bottom:12px;line-height:1.5;
+  }
+  .key-box{
+    background:var(--paper);border:1px solid var(--line);
+    border-radius:var(--r-sm);margin-bottom:10px;overflow:hidden;
+  }
+  .key-box .kb-head{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:8px 12px;border-bottom:1px solid var(--line-soft);
+    background:var(--bg);
+  }
+  .key-box .kb-label{font-size:11px;font-family:var(--mono);color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em}
+  .key-box .kb-actions{display:flex;gap:6px}
+  .key-box .kb-text{
+    font-family:var(--mono);font-size:9.5px;color:var(--ink-soft);
+    white-space:pre-wrap;word-break:break-all;padding:10px 12px;
+    max-height:100px;overflow:auto;line-height:1.5;
+  }
   /* ===== Buttons ===== */
   .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:8px;
@@ -648,6 +683,9 @@
 ... 粘贴收款方公钥 ..."></textarea>
               <div class="hint">留空则仅加密至 GPG-CA 信任根（数据空间托管模式）</div>
               <div class="keyrec" id="gpg-keyrec"></div>
+              <button class="mini-btn" id="btn-gen-keypair" onclick="genTestKeypair()" style="margin-top:6px">
+                生成测试密钥对
+              </button>
             </div>
             <div class="field">
               <label class="check">
@@ -655,6 +693,7 @@
               </label>
               <div class="hint">CA 持有私钥可作为数据空间运营方解密托管数据</div>
             </div>
+            <div id="keypair-result" style="display:none"></div>
           </div>
         </div>
       </div>
@@ -1050,6 +1089,78 @@ function renderGpgKeyrec(){
     html += `<span class="chip ca"><span class="dot"></span>GPG-CA · ${GPG_CA_FP.slice(0,16)}…</span>`;
   }
   rec.innerHTML = html;
+}
+
+/* ---------- Generate test GPG keypair ---------- */
+async function genTestKeypair(){
+  const btn = $('btn-gen-keypair');
+  btn.disabled = true;
+  btn.textContent = '生成中…';
+  try{
+    const name = $('f-payee').value.trim() || '收款方';
+    const kp = await openpgp.generateKey({
+      type:'ecc', curve:'curve25519',
+      userIDs:[{ name, email:'payee@test.local' }],
+      passphrase:'', format:'armored'
+    });
+    const pubArm = kp.publicKey.trim();
+    const privArm = kp.privateKey.trim();
+    window._testPubKey = pubArm;
+    window._testPrivKey = privArm;
+
+    $('f-payee-gpg').value = pubArm;
+    const pubKey = await parsePubKey(pubArm);
+    const fp = await getFingerprint(pubKey);
+    renderGpgKeyrec();
+    $('gpg-keyrec').innerHTML += `<span class="chip"><span class="dot"></span>收款方 · ${fp.slice(0,16)}…</span>`;
+
+    $('keypair-result').style.display = 'block';
+    $('keypair-result').innerHTML = `
+      <div class="keypair-panel">
+        <div class="kp-head">
+          <span class="kp-title">测试密钥对已生成</span>
+          <span style="font-family:var(--mono);font-size:10px;color:var(--ink-faint)">${fp.slice(0,24)}…</span>
+        </div>
+        <div class="kp-warn">此密钥对仅供测试。公钥已自动填入上方，私钥请妥善保存——收款方解密时需粘贴此私钥。</div>
+        <div class="key-box">
+          <div class="kb-head"><span class="kb-label">公钥 · 已填入</span>
+            <div class="kb-actions"><button class="mini-btn" onclick="copyTestPub(this)">复制</button></div>
+          </div>
+          <div class="kb-text">${esc(pubArm)}</div>
+        </div>
+        <div class="key-box">
+          <div class="kb-head"><span class="kb-label">私钥 · 收款方解密用</span>
+            <div class="kb-actions">
+              <button class="mini-btn" onclick="copyTestPriv(this)">复制</button>
+              <button class="mini-btn" onclick="downloadTestPriv()">下载</button>
+            </div>
+          </div>
+          <div class="kb-text">${esc(privArm)}</div>
+        </div>
+      </div>`;
+    toast('测试密钥对已生成，公钥已填入');
+  }catch(e){
+    toast('生成失败：'+e.message);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '生成测试密钥对';
+  }
+}
+async function copyTestPub(btn){
+  try{ await navigator.clipboard.writeText(window._testPubKey||''); if(btn){btn.textContent='已复制';setTimeout(()=>btn.textContent='复制',1500);} toast('公钥已复制'); }catch(e){}
+}
+async function copyTestPriv(btn){
+  try{ await navigator.clipboard.writeText(window._testPrivKey||''); if(btn){btn.textContent='已复制';setTimeout(()=>btn.textContent='复制',1500);} toast('私钥已复制，请妥善保存'); }catch(e){}
+}
+function downloadTestPriv(){
+  const text = window._testPrivKey||'';
+  const blob = new Blob([text], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'payee-private-key.asc';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('私钥文件已下载');
 }
 function updateCur(){
   const c = $('f-currency').value;
