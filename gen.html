@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>H6 · 协议富三角 · GPG-CA 单数据空间 · 解密二维码</title>
+<script src="https://cdn.jsdelivr.net/npm/openpgp@5.11.0/dist/openpgp.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs2@0.0.2/qrcode.min.js"></script>
+<style>
+  :root{
+    --bg:#0f1419;--panel:#161b22;--panel-2:#1c2330;--ink:#e6edf3;
+    --dim:#7d8590;--line:#30363d;--accent:#39c5cf;--gold:#d29922;
+    --green:#2ea043;--amber:#d29922;--red:#f85149;--purple:#a371f7;
+    --r:12px;--r-sm:6px;--mono:'SF Mono','Cascadia Code',Consolas,monospace;--serif:Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:14px/1.6 -apple-system,BlinkMacSystemFont,sans-serif;padding:18px;max-width:860px;margin:0 auto;min-height:100vh}
+  .head{display:flex;align-items:center;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:20px}
+  .head .lg{width:38px;height:38px;background:linear-gradient(135deg,#0d1117,#1c2330);border:1px solid var(--gold);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .head .lg svg{color:var(--gold)}
+  .head h1{font:600 17px var(--serif);letter-spacing:-.01em}
+  .head .sub{font:11px var(--mono);color:var(--dim);margin-top:2px}
+  .head .ver{margin-left:auto;font:10px var(--mono);color:var(--gold);background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.3);padding:3px 9px;border-radius:4px}
+  .back{font:11px var(--mono);color:var(--dim);margin-bottom:16px;display:inline-flex;align-items:center;gap:6px}
+  .back:hover{color:var(--accent)}
+  /* tabs */
+  .tabs{display:flex;gap:0;border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;margin-bottom:20px}
+  .tab{flex:1;padding:10px;text-align:center;font:13px var(--mono);color:var(--dim);cursor:pointer;background:var(--panel);border:none;transition:.15s}
+  .tab.active{color:var(--gold);background:var(--panel-2);box-shadow:inset 0 -2px 0 var(--gold)}
+  .view{display:none}.view.active{display:block}
+  /* triangle viz */
+  .tri-wrap{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:20px;margin-bottom:18px;text-align:center}
+  .tri-svg{width:100%;max-width:340px;height:auto}
+  .tri-vtx{fill:#1c2330;stroke:var(--gold);stroke-width:2}
+  .tri-vtx.ca{stroke:var(--accent)}
+  .tri-lbl{fill:var(--ink);font:600 11px var(--mono);text-anchor:middle}
+  .tri-edge{stroke:var(--line);stroke-width:1.5;fill:none}
+  .tri-elbl{fill:var(--dim);font:9px var(--mono);text-anchor:middle}
+  .tri-vtx.signed{fill:rgba(46,160,67,.25);stroke:var(--green)}
+  /* form */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:16px;margin-bottom:14px}
+  .f-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  @media(max-width:560px){.f-row{grid-template-columns:1fr}}
+  .f{margin-bottom:0}
+  .f label{display:block;font:11px var(--mono);color:var(--dim);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+  .f input,.f textarea,.f select{width:100%;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:9px 11px;font:13px var(--mono)}
+  .f input:focus,.f textarea:focus{outline:none;border-color:var(--gold)}
+  .f textarea{resize:vertical;font-size:11px}
+  .sec-t{font:11px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:18px 0 8px;display:flex;align-items:center;gap:8px}
+  .sec-t::after{content:'';flex:1;height:1px;background:var(--line)}
+  .btn{background:var(--gold);color:#0f1419;border:none;border-radius:4px;padding:10px 20px;font:600 13px var(--mono);cursor:pointer;transition:.15s}
+  .btn:hover:not(:disabled){background:#e3a72f}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--dim)}
+  .btn-ghost:hover{border-color:var(--dim);color:var(--ink)}
+  .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+  /* QR */
+  .qr-out{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:18px;margin-top:14px}
+  .qr-out .q-title{font:12px var(--mono);color:var(--gold);margin-bottom:10px}
+  .qr-grid{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
+  .qr-item{text-align:center}
+  .qr-item canvas,.qr-item img{background:#fff;border-radius:4px;padding:4px}
+  .qr-item .q-no{font:10px var(--mono);color:var(--dim);margin-top:6px}
+  .b64-box{margin-top:14px;background:#000;border:1px solid var(--line);border-radius:4px;padding:10px;font:10px var(--mono);color:var(--accent);word-break:break-all;max-height:120px;overflow:auto;line-height:1.6}
+  .b64-box .lbl{color:var(--dim);display:block;margin-bottom:4px}
+  /* result triangle (decrypt) */
+  .res-tri{background:var(--panel);border:1px solid var(--green);border-radius:var(--r);padding:20px;margin-top:14px}
+  .res-tri .rt-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .res-tri .rt-badge{font:11px var(--mono);color:var(--green);background:rgba(46,160,67,.12);padding:3px 10px;border-radius:4px}
+  .res-row{display:grid;grid-template-columns:100px 1fr;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font:12px var(--mono)}
+  .res-row:last-child{border-bottom:none}
+  .res-row .k{color:var(--dim)}.res-row .v{color:var(--ink);word-break:break-all}
+  .res-sig{margin-top:12px;background:#000;color:var(--accent);border-radius:4px;padding:10px;font:10px var(--mono);word-break:break-all;line-height:1.6}
+  .note{font:11px var(--mono);color:var(--dim);padding:10px 14px;background:var(--panel-2);border-radius:4px;border-left:2px solid var(--gold);margin-bottom:14px;line-height:1.7}
+  .empty{text-align:center;padding:40px 20px;color:var(--dim);font:13px var(--mono)}
+  .foot{text-align:center;padding:20px 0;font:11px var(--mono);color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="head">
+  <div class="lg"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L22 20H2L12 2z"/><circle cx="12" cy="14" r="2" fill="currentColor"/></svg></div>
+  <div>
+    <h1>H6 · 协议富三角函数</h1>
+    <div class="sub">GPG-CA 单数据空间加密 · base64+DEFLATE 压缩 · 解密二维码</div>
+  </div>
+  <div class="ver">gen.js v1.0</div>
+</div>
+<a href="index.html" class="back">← 返回控制台</a>
+
+<div class="tabs">
+  <button class="tab active" onclick="setTab('gen')">▲ 生成三角 + 二维码</button>
+  <button class="tab" onclick="setTab('dec')">▼ 解密二维码</button>
+</div>
+
+<!-- ===== GENERATE ===== -->
+<div class="view active" id="v-gen">
+  <div class="note">
+    <b>协议富三角</b>：三个顶点 — 付款方(A)、收款方(B)、GPG-CA仲裁方(C)。<br>
+    三条边：A↔B 付款义务 · A↔C 付款方向CA签信 · B↔C 收款方向CA签信。<br>
+    整个三角协议 JSON 经 GPG-CA <b>单数据空间加密</b> → DEFLATE+base64 压缩 → 渲染为<b>解密二维码</b>（可分片）。
+  </div>
+
+  <div class="tri-wrap">
+    <svg class="tri-svg" viewBox="0 0 300 240">
+      <!-- edges -->
+      <line class="tri-edge" x1="150" y1="40" x2="60" y2="200" id="edge-ac"/>
+      <line class="tri-edge" x1="150" y1="40" x2="240" y2="200" id="edge-bc"/>
+      <line class="tri-edge" x1="60" y1="200" x2="240" y2="200" id="edge-ab"/>
+      <text class="tri-elbl" x="90" y="130">A↔C 签信</text>
+      <text class="tri-elbl" x="210" y="130">B↔C 签信</text>
+      <text class="tri-elbl" x="150" y="218">A↔B 付款义务</text>
+      <!-- vertices -->
+      <circle class="tri-vtx ca" cx="150" cy="40" r="26" id="vtx-ca"/>
+      <text class="tri-lbl" x="150" y="36">CA</text>
+      <text class="tri-elbl" x="150" y="52" style="fill:var(--accent)">GPG-CA</text>
+      <circle class="tri-vtx" cx="60" cy="200" r="26" id="vtx-a"/>
+      <text class="tri-lbl" x="60" y="196">A</text>
+      <text class="tri-elbl" x="60" y="212">付款方</text>
+      <circle class="tri-vtx" cx="240" cy="200" r="26" id="vtx-b"/>
+      <text class="tri-lbl" x="240" y="196">B</text>
+      <text class="tri-elbl" x="240" y="212">收款方</text>
+    </svg>
+  </div>
+
+  <div class="panel">
+    <div class="f-row">
+      <div class="f"><label>付款方 A</label><input type="text" id="g-a" placeholder="张三"></div>
+      <div class="f"><label>收款方 B</label><input type="text" id="g-b" placeholder="李四"></div>
+    </div>
+    <div class="f-row">
+      <div class="f"><label>金额</label><input type="text" id="g-amt" placeholder="5000"></div>
+      <div class="f"><label>币种</label><select id="g-cur"><option>CNY</option><option>USD</option><option>EUR</option></select></div>
+    </div>
+    <div class="f-row">
+      <div class="f"><label>用途</label><input type="text" id="g-pur" placeholder="货款结算"></div>
+      <div class="f"><label>期限</label><input type="date" id="g-dl"></div>
+    </div>
+    <div class="f" style="margin-top:12px">
+      <label>仲裁条款（富三角争议解决）</label>
+      <textarea id="g-arb" rows="2" placeholder="如发生争议，由 GPG-CA 信任根指纹持有方依据本协议摘要进行仲裁，双方 ECDSA 签名为不可抵赖证据。">争议由 GPG-CA 仲裁方依据协议 SHA-256 摘要裁定，ECDSA 双签为据。</textarea>
+    </div>
+  </div>
+
+  <div class="acts">
+    <button class="btn btn-ghost" onclick="location.href='index.html'">取消</button>
+    <button class="btn" id="gen-btn" onclick="genTriangle()">生成富三角 → 加密 → 二维码</button>
+  </div>
+
+  <div id="qr-out"></div>
+</div>
+
+<!-- ===== DECRYPT ===== -->
+<div class="view" id="v-dec">
+  <div class="note">
+    扫描<b>解密二维码</b>后，将 base64 密文粘贴到下方，并提供 GPG 私钥（+ 密码）即可解密还原协议富三角。<br>
+    若二维码分片，按顺序拼接各片 base64 后粘贴。
+  </div>
+
+  <div class="panel">
+    <div class="f" style="margin-bottom:12px">
+      <label>base64 压缩密文（来自二维码扫描）</label>
+      <textarea id="d-b64" rows="4" placeholder="粘贴 eJx... base64 密文"></textarea>
+    </div>
+    <div class="f" style="margin-bottom:12px">
+      <label>GPG 私钥（armored）</label>
+      <textarea id="d-priv" rows="4" placeholder="-----BEGIN PGP PRIVATE KEY BLOCK-----"></textarea>
+    </div>
+    <div class="f-row">
+      <div class="f"><label>私钥密码（可空）</label><input type="password" id="d-pass" placeholder="passphrase"></div>
+    </div>
+  </div>
+
+  <div class="acts">
+    <button class="btn" id="dec-btn" onclick="decryptQr()">解密二维码 → 还原三角</button>
+  </div>
+
+  <div id="dec-out"></div>
+</div>
+
+<div class="foot">
+  H6 · 协议富三角函数 · GPG-CA 单数据空间 · base64+DEFLATE 压缩 · 解密二维码 · opensource<br>
+  <a href="index.html" style="color:var(--dim)">控制台</a> · <a href="explorer.html" style="color:var(--dim)">数据空间浏览器</a>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- GPG-CA 信任根 ---------- */
+const GPG_CA_KEY = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEamdMfxYJKwYBBAHaRw8BAQdAZUTS4h498msUthAuOzqMrn4DzyJo6TiWvUhM
+DPLZa2u0PEpNS3N0dWRpby1tay1kYXRhZm9yLWRhdGFzZXRfR1BHLUNBLTAgPG1h
+a2VlbnRyb3B5QHllYWgubmV0PohyBBMWCAAaBAsJCAcCFQgCFgECGQEFgmpnTH8C
+ngECmwMACgkQ+NqqAyU6c2c2egD/YiB+76NAYjHsFkbMnejIwBoxbzDaTbvGIcbe
+Y2DGZIwBAOz5p9uD4Jr+jVM4l5MTZui3lvDr4N+Z0Kmfd2Q8dJYOuDgEamdMfxIK
+KwYBBAGXVQEFAQEHQK+zxauddypKgHGsDwXY6TvOrU6AF6l669qJK8sU10hVAwEI
+B4h4BBgWCAAJBYJqZ0x/ApsMACEJEPjaqgMlOnNnFiEEIcTnZrtWqPxVCZYj+Nqq
+AyU6c2emuwEAnsKe9uNGUZ9hWgR4DbO8uu2mrGWUx87i3fHVsqM+J40A+gIQ6uED
+EBLdD3WqIKJgCm8GBU74MoIL+Bu+iueRiygH
+=mySC
+-----END PGP PUBLIC KEY BLOCK-----`;
+let GPG_CA=null, GPG_CA_FP='';
+
+async function loadCa(){
+  try{
+    GPG_CA = await openpgp.readKey({armoredKey:GPG_CA_KEY});
+    GPG_CA_FP = GPG_CA.getFingerprint().toUpperCase();
+  }catch(e){ console.error('CA load', e); }
+}
+
+/* ---------- 密码学 ---------- */
+const enc = new TextEncoder(), dec = new TextDecoder();
+function b64(buf){ const b = buf instanceof Uint8Array ? buf : new Uint8Array(buf); let s=''; for(let i=0;i<b.length;i++) s+=String.fromCharCode(b[i]); return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function unb64(str){ str=str.replace(/-/g,'+').replace(/_/g,'/'); while(str.length%4) str+='='; const bin=atob(str); const u=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u; }
+async function sha256Hex(s){ const d=await crypto.subtle.digest('SHA-256',enc.encode(s)); return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,'0')).join(''); }
+function canonicalize(o){ if(o===null||typeof o!=='object') return JSON.stringify(o); if(Array.isArray(o)) return '['+o.map(canonicalize).join(',')+']'; return '{'+Object.keys(o).sort().map(k=>JSON.stringify(k)+':'+canonicalize(o[k])).join(',')+'}'; }
+function randHex(n){ const a=new Uint8Array(n); crypto.getRandomValues(a); return [...a].map(b=>b.toString(16).padStart(2,'0')).join(''); }
+
+/* base64+DEFLATE 压缩 / 解压 */
+function compressB64(str){
+  const deflated = pako.deflate(enc.encode(str), {level:9});
+  return b64(deflated);
+}
+function decompressB64(b64str){
+  const bytes = unb64(b64str);
+  const inflated = pako.inflate(bytes);
+  return dec.decode(inflated);
+}
+
+/* ECDSA */
+async function genKey(){ return crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']); }
+async function exportPub(k){ const s=await crypto.subtle.exportKey('spki',k.publicKey); return b64(s); }
+async function importPub(b){ return crypto.subtle.importKey('spki',unb64(b),{name:'ECDSA',namedCurve:'P-256'},false,['verify']); }
+async function sign(priv,data){ const s=await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},priv,enc.encode(data)); return b64(s); }
+
+/* ---------- tab ---------- */
+function setTab(t){
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',(t==='gen'?0:1)===i));
+  $('v-gen').classList.toggle('active',t==='gen');
+  $('v-dec').classList.toggle('active',t==='dec');
+}
+
+/* ---------- 生成富三角 ---------- */
+async function genTriangle(){
+  const a=$('g-a').value.trim(), b=$('g-b').value.trim();
+  const amt=$('g-amt').value.trim(), cur=$('g-cur').value;
+  const pur=$('g-pur').value.trim(), dl=$('g-dl').value;
+  const arb=$('g-arb').value.trim();
+  if(!a||!b||!amt||!pur){ return alert('请填写 A/B/金额/用途'); }
+  const btn=$('gen-btn'); btn.disabled=true; const o=btn.textContent; btn.textContent='生成中…';
+  try{
+    // 构建富三角协议
+    const triId='tri-'+randHex(6);
+    const ts=new Date().toISOString();
+    const protocol={
+      h6:true, type:'rich-triangle', id:triId, ts,
+      vertices:{ A:{name:a,role:'payer'}, B:{name:b,role:'payee'}, C:{name:'GPG-CA',role:'arbiter',fingerprint:GPG_CA_FP} },
+      edges:{
+        AB:{relation:'payment_obligation', amount:parseFloat(amt).toFixed(2), currency:cur, purpose:pur, deadline:dl},
+        AC:{relation:'payer_attestation_to_ca'},
+        BC:{relation:'payee_attestation_to_ca'}
+      },
+      arbitration:arb,
+      dataspace:'single-gpg-ca-encrypted'
+    };
+    // A 签署（付款方 ECDSA）
+    const content=canonicalize(protocol);
+    const digest=await sha256Hex(content);
+    const kp=await genKey();
+    const pk=await exportPub(kp);
+    const sig=await sign(kp.privateKey,content);
+    const signed={...protocol, digest, payerPubKey:pk, payerSig:sig, signedAt:new Date().toISOString()};
+    // GPG-CA 单数据空间加密
+    const armored=await openpgp.encrypt({
+      message: await openpgp.createMessage({text:canonicalize(signed)}),
+      encryptionKeys:[GPG_CA], format:'armored'
+    });
+    // base64+DEFLATE 压缩
+    const compressed=compressB64(armored);
+    // 渲染二维码（分片）
+    renderQr(compressed, {triId, digest, a, b, amt, cur});
+    // 标记三角已签
+    $('vtx-a').classList.add('signed');
+    $('edge-ab').style.stroke='var(--green)';
+    $('edge-ac').style.stroke='var(--green)';
+  }catch(e){ alert('生成失败：'+e.message); }
+  finally{ btn.disabled=false; btn.textContent=o; }
+}
+
+/* ---------- 渲染二维码（分片） ---------- */
+function renderQr(b64payload, meta){
+  const MAX=1800; // 每片最大字符（QR 容量安全值）
+  const chunks=[];
+  for(let i=0;i<b64payload.length;i+=MAX) chunks.push(b64payload.slice(i,i+MAX));
+  let html='<div class="qr-out"><div class="q-title">▼ 解密二维码 · '+chunks.length+' 片</div>';
+  html+='<div class="qr-grid">';
+  chunks.forEach((c,idx)=>{
+    html+=`<div class="qr-item"><div id="qr-${idx}" style="display:inline-block"></div><div class="q-no">${chunks.length>1?('片 '+(idx+1)+'/'+chunks.length):'完整'}</div></div>`;
+  });
+  html+='</div>';
+  html+=`<div class="b64-box"><span class="lbl">base64+DEFLATE 压缩密文 (${b64payload.length} 字符${chunks.length>1?'，分 '+chunks.length+' 片':''})</span>${esc(b64payload.slice(0,200))}${b64payload.length>200?'…':''}</div>`;
+  html+=`<div style="margin-top:10px;font:11px var(--mono);color:var(--dim)">三角ID ${esc(meta.triId)} · 摘要 ${esc(meta.digest.slice(0,32))}… · ${esc(meta.a)}→${esc(meta.b)} ${esc(meta.amt)} ${esc(meta.cur)}</div>`;
+  html+='</div>';
+  $('qr-out').innerHTML=html;
+  // 渲染 QR (qrcodejs2 API)
+  chunks.forEach((c,idx)=>{
+    const payload=chunks.length>1 ? `H6|${idx+1}/${chunks.length}|${c}` : c;
+    try{
+      $('qr-'+idx).innerHTML='';
+      new QRCode($('qr-'+idx), { text:payload, width:200, height:200, correctLevel: QRCode.CorrectLevel.L });
+    }catch(e){ console.error('QR',e); $('qr-'+idx).innerHTML='<div style="color:var(--red);font:11px var(--mono)">QR 渲染失败</div>'; }
+  });
+}
+
+/* ---------- 解密二维码 ---------- */
+async function decryptQr(){
+  let b64str=$('d-b64').value.trim();
+  const privArm=$('d-priv').value.trim();
+  const pass=$('d-pass').value;
+  if(!b64str||!privArm){ return alert('请填写 base64 密文与 GPG 私钥'); }
+  const btn=$('dec-btn'); btn.disabled=true; const o=btn.textContent; btn.textContent='解密中…';
+  try{
+    // 处理分片头 H6|idx/total|...
+    // 若粘贴的是单片或多片拼接，去除分片头
+    const parts=b64str.split(/\s+/).filter(Boolean);
+    let payload='';
+    for(const p of parts){
+      if(p.startsWith('H6|')){
+        const seg=p.split('|'); // H6|idx/total|data
+        payload+=seg.slice(2).join('|');
+      } else payload+=p;
+    }
+    payload=payload.replace(/\s/g,'');
+    // 解压
+    const armored=decompressB64(payload);
+    // GPG 解密
+    let pk=await openpgp.readPrivateKey({armoredKey:privArm});
+    if(pass) pk=await openpgp.decryptKey({privateKey:pk,passphrase:pass});
+    const msg=await openpgp.readMessage({armoredMessage:armored.trim()});
+    const r=await openpgp.decrypt({message:msg,decryptionKeys:pk});
+    const signed=JSON.parse(r.data);
+    // 验证 ECDSA 签名
+    const content=canonicalize({...signed, digest:undefined, payerPubKey:undefined, payerSig:undefined, signedAt:undefined});
+    const recomputed=await sha256Hex(content);
+    const sigOk = recomputed===signed.digest;
+    // 渲染结果三角
+    renderDecrypted(signed, sigOk);
+  }catch(e){
+    $('dec-out').innerHTML=`<div class="empty" style="color:var(--red)">解密失败：${esc(e.message)}</div>`;
+  }
+  finally{ btn.disabled=false; btn.textContent=o; }
+}
+
+function renderDecrypted(s, sigOk){
+  const v=s.vertices||{};
+  const e=s.edges||{};
+  const ab=e.AB||{};
+  let rows=`
+    <div class="res-row"><div class="k">三角ID</div><div class="v">${esc(s.id)}</div></div>
+    <div class="res-row"><div class="k">时间</div><div class="v">${esc(s.ts)}</div></div>
+    <div class="res-row"><div class="k">数据空间</div><div class="v">${esc(s.dataspace)} · GPG-CA 单空间解密</div></div>
+    <div class="res-row"><div class="k">A 付款方</div><div class="v">${esc(v.A?.name)} (${esc(v.A?.role)})</div></div>
+    <div class="res-row"><div class="k">B 收款方</div><div class="v">${esc(v.B?.name)} (${esc(v.B?.role)})</div></div>
+    <div class="res-row"><div class="k">C 仲裁方</div><div class="v">${esc(v.C?.name)} · 指纹 ${esc((v.C?.fingerprint||'').slice(0,24))}…</div></div>
+    <div class="res-row"><div class="k">A↔B 义务</div><div class="v">${esc(ab.amount)} ${esc(ab.currency)} · ${esc(ab.purpose)} · 期限 ${esc(ab.deadline||'—')}</div></div>
+    <div class="res-row"><div class="k">仲裁条款</div><div class="v">${esc(s.arbitration)}</div></div>
+    <div class="res-row"><div class="k">摘要</div><div class="v">${esc(s.digest)}</div></div>
+    <div class="res-row"><div class="k">A 签名验证</div><div class="v" style="color:${sigOk?'var(--green)':'var(--red)'}">${sigOk?'✓ ECDSA 验证通过，摘要一致':'✗ 验证失败'}</div></div>`;
+  $('dec-out').innerHTML=`<div class="res-tri">
+    <div class="rt-head">
+      <svg width="28" height="24" viewBox="0 0 24 20"><path d="M12 2L22 18H2L12 2z" fill="none" stroke="${sigOk?'var(--green)':'var(--red)'}" stroke-width="2"/><circle cx="12" cy="13" r="2" fill="${sigOk?'var(--green)':'var(--red)'}"/></svg>
+      <div><div style="font:600 15px var(--serif)">协议富三角已还原</div></div>
+      <span class="rt-badge" style="margin-left:auto">${sigOk?'ECDSA ✓':'验证失败'}</span>
+    </div>
+    ${rows}
+    <div class="res-sig"><span style="color:var(--dim)">付款方公钥</span>${esc(s.payerPubKey)}<br><span style="color:var(--dim);margin-top:4px;display:inline-block">付款方签名</span>${esc(s.payerSig)}</div>
+  </div>`;
+  $('dec-out').scrollIntoView({behavior:'smooth'});
+}
+
+/* ---------- init ---------- */
+window.addEventListener('load', loadCa);
+</script>
+</body>
+</html>
