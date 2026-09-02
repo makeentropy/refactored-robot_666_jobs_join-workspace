@@ -204,6 +204,51 @@ cmd_frp_down(){
   fi
 }
 
+cmd_frp_ddns(){
+  local domain="${1:-${FRP_DOMAIN:-prober.${FRP_SERVER:-frp.example.com}}}"
+  mkdir -p "${FRP_DIR}"
+  # 确保 frpc 存在
+  if [[ ! -x "${FRPC_BIN}" ]]; then cmd_frp_init >/dev/null 2>&1; fi
+  local server_addr="${FRP_SERVER:-free.frp.io}"
+  local server_port="${FRP_PORT:-7000}"
+  local vhost_port="${FRP_VHOST:-80}"
+  cat > "${FRPC_CFG}" <<EOF
+# FRP DDNS 公链配置 — prober-cli 自动生成
+# 用法: ${0} frp ddns [your-ddns-domain.com]
+serverAddr = "${server_addr}"
+serverPort = ${server_port}
+
+[[proxies]]
+name = "prober-web-ddns"
+type = "http"
+localIP = "127.0.0.1"
+localPort = ${PORT}
+customDomains = ["${domain}"]
+
+[[proxies]]
+name = "prober-data-ddns"
+type = "http"
+localIP = "127.0.0.1"
+localPort = ${PORT}
+customDomains = ["data.${domain}"]
+EOF
+  ok "FRP DDNS 配置已生成: ${FRPC_CFG}"
+  echo ""
+  echo "  域名映射:"
+  echo "    主应用    ${domain}           → 本地 :${PORT}/index.html"
+  echo "    数据空间  data.${domain}     → 本地 :${PORT}/explorer.html"
+  echo "  服务端:   ${server_addr}:${server_port}  (http vhostPort ${vhost_port})"
+  echo ""
+  echo "  环境变量:"
+  echo "    FRP_DOMAIN   主域名  (当前 ${domain})"
+  echo "    FRP_SERVER   frps 地址 (当前 ${server_addr})"
+  echo "    FRP_PORT     frps 端口 (当前 ${server_port})"
+  echo ""
+  echo "  公网部署:"
+  echo "    ${0} serve && ${0} export && ${0} frp up"
+  echo "  访问: http://${domain}/explorer.html"
+}
+
 cmd_frp_status(){
   echo "=== FRP 公链状态 ==="
   if [[ -x "${FRPC_BIN}" ]]; then echo "  frpc:    已安装 (${FRPC_BIN})"; else echo "  frpc:    ${C_R}未安装${C_0} (运行 frp init)"; fi
@@ -225,6 +270,23 @@ cmd_frp_status(){
   else
     echo "  服务:    ${C_Y}未运行${C_0}  (运行 ${0} serve)"
   fi
+}
+
+# ---------- export: 导出数据空间到 web 根目录 ----------
+cmd_export(){
+  local out_dir="${SCRIPT_DIR}/data"
+  mkdir -p "${out_dir}"
+  local l="${DATA_DIR}/ledger.json" s="${DATA_DIR}/agreements.json"
+  if [[ -f "$l" ]]; then cp "$l" "${out_dir}/ledger.json"; ok "账本 → data/ledger.json"; else warn "ledger.json 不存在（先创建协议/探针）"; fi
+  if [[ -f "$s" ]]; then cp "$s" "${out_dir}/agreements.json"; ok "协议 → data/agreements.json"; else warn "agreements.json 不存在"; fi
+  # 生成数据空间索引（含 GPG-CA 指纹摘要）
+  local ts; ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  cat > "${out_dir}/index.json" <<EOF
+{"exported":"${ts}","space":"JMKstudio-gpg-CA","blocks":$(node -e "try{console.log(JSON.parse(require('fs').readFileSync('${l}','utf8')||'[]').length)}catch{console.log(0)}" 2>/dev/null || echo 0),"agreements":$(node -e "try{console.log(Object.keys(JSON.parse(require('fs').readFileSync('${s}','utf8')||'{}')).length)}catch{console.log(0)}" 2>/dev/null || echo 0)}
+EOF
+  ok "数据空间索引 → data/index.json"
+  echo "  浏览器访问: http://localhost:${PORT}/explorer.html"
+  echo "  数据端点:   /data/ledger.json  /data/agreements.json  /data/index.json"
 }
 
 # ---------- gen-app: 脚手架新实例 ----------
@@ -262,11 +324,13 @@ case "${cmd}" in
     sub="${1:-status}"
     case "${sub}" in
       init)   cmd_frp_init ;;
+      ddns)   shift; cmd_frp_ddns "$@" ;;
       up)     cmd_frp_up ;;
       down)   cmd_frp_down ;;
       status) cmd_frp_status ;;
-      *)      err "用法: ${0} frp init|up|down|status"; exit 1 ;;
+      *)      err "用法: ${0} frp init|ddns|up|down|status"; exit 1 ;;
     esac ;;
+  export)         cmd_export ;;
   # 以下委托 Node 后端
   agreement|probe|ledger|gpg|verify|ca|help)
     run_node "${cmd}" "$@" ;;
@@ -284,9 +348,11 @@ case "${cmd}" in
     echo "  serve [port]     启动本地 HTTP 服务"
     echo "  stop             停止本地服务"
     echo "  frp init         下载 frpc + 生成公链配置"
+    echo "  frp ddns [domain] 生成 DDNS 公链域名配置"
     echo "  frp up           启动 FRP 公链隧道"
     echo "  frp down         停止隧道"
     echo "  frp status       查看公链+服务状态"
+    echo "  export           导出数据空间到 data/ 供浏览器加载"
     echo "  agreement new|list   P2P 协议 (委托 Node)"
     echo "  probe run            探针检测 (委托 Node)"
     echo "  ledger               哈希链账本 (委托 Node)"

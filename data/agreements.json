@@ -1,0 +1,20 @@
+{
+  "ag-e39405000157": {
+    "v": 2,
+    "id": "ag-e39405000157",
+    "created": "2026-09-02T02:54:24.544Z",
+    "payer": "张三",
+    "payee": "李四",
+    "amount": "5000.00",
+    "currency": "CNY",
+    "purpose": "货款结算",
+    "deadline": "2026-09-09",
+    "method": "银行转账",
+    "terms": "",
+    "dig": "ea54f16751e9175b6ed033dad4b949426f6f772ef96d6ec977e48605f0be485b",
+    "pk": "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEJkbFu9j1GNzGozuOHgNIaQvuDiOvSX-BQUCQzefF2HMzeCX_dm7SqcGh_xbbW2SxnyejC7KX9eZo0pS3VE9ftA",
+    "sig": "erzHRC4mPG-YtOA1MewABQ2u9x3z0zoSKJMNkPmspwZPtxEHh-u7MdMnAZ9uJQiCsSogP2xlwivEJhiYL5ENYw",
+    "payerLocal": true,
+    "gpgEncrypted": true
+  }
+}

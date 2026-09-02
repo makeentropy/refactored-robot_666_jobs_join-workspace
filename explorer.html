@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>JMKstudio · GPG-CA 加密链数据空间浏览器</title>
+<script src="https://cdn.jsdelivr.net/npm/openpgp@5.11.0/dist/openpgp.min.js"></script>
+<style>
+  :root{
+    --bg:#f3ede2;--panel:#fdfaf4;--panel-2:#f7f0e3;--ink:#1a1410;
+    --dim:#7a6c5c;--line:#d8cdb8;--accent:#8b5a2b;--gold:#b8860b;
+    --green:#2e7d32;--amber:#c68820;--red:#c0392b;--cyan:#0e7c7b;
+    --r:14px;--r-sm:8px;--mono:'SF Mono','Cascadia Code',Consolas,monospace;
+    --serif:Georgia,'Times New Roman',serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:14px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:20px;max-width:1000px;margin:0 auto}
+  a{color:var(--accent);text-decoration:none}
+  .wrap{max-width:960px;margin:0 auto}
+  .head{display:flex;align-items:center;gap:14px;padding:18px 0;border-bottom:2px solid var(--line);margin-bottom:22px}
+  .head .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#1a1410,#3d2818);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .head .logo svg{color:var(--gold)}
+  .head h1{font-family:var(--serif);font-size:19px;letter-spacing:-.01em}
+  .head .sub{font:11px var(--mono);color:var(--dim);margin-top:2px}
+  .head .ver{margin-left:auto;font:10px var(--mono);color:var(--gold);background:rgba(184,134,11,.1);border:1px solid rgba(184,134,11,.3);padding:4px 10px;border-radius:4px}
+  .back-link{font:12px var(--mono);color:var(--dim);margin-bottom:16px;display:inline-flex;align-items:center;gap:6px}
+  .back-link:hover{color:var(--accent)}
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:22px}
+  @media(max-width:680px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px 12px;text-align:center}
+  .stat .n{font:700 24px/1 var(--serif);color:var(--ink)}
+  .stat .l{font:10px var(--mono);color:var(--dim);margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+  .stat.ok .n{color:var(--green)} .stat.warn .n{color:var(--amber)}
+  /* integrity banner */
+  .integrity{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--r-sm);margin-bottom:22px;font:13px var(--mono)}
+  .integrity.ok{background:rgba(46,125,50,.08);border:1px solid rgba(46,125,50,.3);color:var(--green)}
+  .integrity.err{background:rgba(192,57,43,.08);border:1px solid rgba(192,57,43,.3);color:var(--red)}
+  .integrity .ic{font-size:18px}
+  /* search */
+  .search{display:flex;gap:10px;margin-bottom:18px}
+  .search input{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 14px;font:13px var(--mono);color:var(--ink)}
+  .search input:focus{outline:none;border-color:var(--accent)}
+  .search button{background:var(--ink);color:var(--bg);border:none;border-radius:var(--r-sm);padding:10px 18px;font:13px var(--mono);cursor:pointer}
+  .search .imp{background:transparent;color:var(--accent);border:1px solid var(--line)}
+  /* chain viz */
+  .section-t{font:11px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:22px 0 10px;display:flex;align-items:center;gap:8px}
+  .section-t::after{content:'';flex:1;height:1px;background:var(--line)}
+  .chain-scroll{overflow-x:auto;padding-bottom:10px;margin:0 -20px;padding-left:20px;padding-right:20px}
+  .chain{display:flex;align-items:stretch;gap:0;min-width:max-content}
+  .block{flex-shrink:0;width:170px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px;cursor:pointer;transition:.15s;position:relative}
+  .block:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+  .block.active{border-color:var(--gold);box-shadow:0 0 0 2px rgba(184,134,11,.2)}
+  .block.genesis{background:linear-gradient(135deg,#1a1410,#3d2818);color:var(--gold);border-color:#3d2818}
+  .block.genesis .b-id,.block.genesis .b-hash{color:rgba(184,134,11,.8)}
+  .block .b-idx{font:700 11px var(--mono);color:var(--dim);margin-bottom:6px}
+  .block.genesis .b-idx{color:rgba(184,134,11,.6)}
+  .block .b-type{font-size:16px;margin-bottom:6px}
+  .block .b-id{font:11px var(--mono);color:var(--ink);word-break:break-all;margin-bottom:4px}
+  .block .b-hash{font:9px var(--mono);color:var(--dim);word-break:break-all}
+  .block .b-badges{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+  .block .bdg{font:9px var(--mono);padding:2px 6px;border-radius:3px}
+  .block .bdg.enc{background:rgba(14,124,123,.12);color:var(--cyan)}
+  .block .bdg.st{background:rgba(46,125,50,.12);color:var(--green)}
+  .block .bdg.pend{background:rgba(198,136,32,.12);color:var(--amber)}
+  .link-arrow{flex-shrink:0;width:28px;display:flex;align-items:center;justify-content:center;color:var(--line);font-size:18px}
+  /* block list */
+  .b-list{display:flex;flex-direction:column;gap:8px}
+  .b-row{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:14px;cursor:pointer;transition:.15s}
+  .b-row:hover{border-color:var(--accent)}
+  .b-row.active{border-color:var(--gold);background:#fbf6ec}
+  .b-row .r-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .b-row .r-idx{font:700 13px var(--mono);color:var(--accent);min-width:36px}
+  .b-row .r-type{font-size:15px}
+  .b-row .r-id{font:12px var(--mono);color:var(--ink);flex:1}
+  .b-row .r-time{font:11px var(--mono);color:var(--dim)}
+  .b-row .r-mid{font:11px var(--mono);color:var(--dim);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+  .b-row .r-mid span b{color:var(--ink);font-weight:600}
+  .b-row .r-hashes{font:10px var(--mono);color:var(--dim);background:var(--panel-2);border-radius:4px;padding:8px 10px;line-height:1.7;word-break:break-all}
+  .b-row .r-hashes .h-l{color:var(--cyan)}
+  /* detail panel */
+  .detail{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);overflow:hidden;margin-top:16px;animation:fade .2s}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+  .detail .d-head{background:linear-gradient(135deg,#1a1410,#3d2818);color:var(--gold);padding:16px 18px}
+  .detail .d-head h3{font:700 15px var(--mono)}
+  .detail .d-head .d-sub{font:11px var(--mono);color:rgba(184,134,11,.7);margin-top:4px}
+  .detail .d-body{padding:18px}
+  .detail .d-row{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font:12px var(--mono)}
+  .detail .d-row:last-child{border-bottom:none}
+  .detail .d-row .k{color:var(--dim)}
+  .detail .d-row .v{color:var(--ink);word-break:break-all}
+  .detail .d-row .v.mono{background:var(--panel-2);padding:6px 8px;border-radius:4px;font-size:10px}
+  .detail .d-sig{margin-top:12px;padding:12px;background:#000;color:var(--cyan);border-radius:4px;font:10px var(--mono);word-break:break-all;line-height:1.6}
+  /* ca panel */
+  .ca-panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:16px;margin-top:22px}
+  .ca-panel h3{font:13px var(--serif);margin-bottom:10px;color:var(--ink)}
+  .ca-panel .ca-row{font:12px var(--mono);color:var(--dim);padding:6px 0;display:flex;gap:10px}
+  .ca-panel .ca-row b{color:var(--ink);min-width:80px}
+  /* import modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(26,20,16,.5);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--panel);border-radius:var(--r);max-width:560px;width:100%;padding:24px}
+  .modal h3{font:16px var(--serif);margin-bottom:14px}
+  .modal textarea{width:100%;height:160px;font:11px var(--mono);background:#1a1410;color:var(--cyan);border-radius:6px;border:1px solid var(--line);padding:10px;resize:vertical}
+  .modal .m-act{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+  .modal button{font:13px var(--mono);padding:8px 18px;border-radius:6px;border:none;cursor:pointer}
+  .modal .m-ok{background:var(--accent);color:#fff}
+  .modal .m-cl{background:transparent;color:var(--dim);border:1px solid var(--line)}
+  .empty{text-align:center;padding:50px 20px;color:var(--dim);font:13px var(--mono)}
+  .foot{text-align:center;padding:24px 0;font:11px var(--mono);color:var(--dim)}
+  .foot a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="6" height="6" rx="1"/><rect x="11" y="5" width="6" height="6" rx="1"/><rect x="3" y="13" width="6" height="6" rx="1"/><rect x="11" y="13" width="6" height="6" rx="1"/></svg>
+    </div>
+    <div>
+      <h1>JMKstudio · GPG-CA 加密链数据空间浏览器</h1>
+      <div class="sub">distributed blockchain data space explorer · opensource</div>
+    </div>
+    <div class="ver" id="ver-badge">v1.0</div>
+  </div>
+
+  <a href="index.html" class="back-link">← 返回协议控制台</a>
+
+  <!-- stats -->
+  <div class="stats" id="stats"></div>
+
+  <!-- integrity -->
+  <div class="integrity ok" id="integrity">
+    <span class="ic">◆</span><span id="integrity-txt">正在校验链完整性…</span>
+  </div>
+
+  <!-- search -->
+  <div class="search">
+    <input type="text" id="q" placeholder="按 ID / 哈希 / 付款方 搜索…">
+    <button onclick="doSearch()">搜索</button>
+    <button class="imp" onclick="document.getElementById('imp-modal').classList.add('show')">导入</button>
+  </div>
+
+  <!-- chain viz -->
+  <div class="section-t">区块链可视化</div>
+  <div class="chain-scroll"><div class="chain" id="chain-viz"></div></div>
+
+  <!-- block list -->
+  <div class="section-t">数据块列表</div>
+  <div class="b-list" id="b-list"></div>
+
+  <!-- detail -->
+  <div id="detail"></div>
+
+  <!-- GPG-CA panel -->
+  <div class="ca-panel" id="ca-panel">
+    <h3>GPG-CA 信任根</h3>
+    <div id="ca-info"><div class="ca-row"><b>状态</b>加载中…</div></div>
+  </div>
+
+  <div class="foot">
+    JMKstudio · GPG-CA 加密链数据空间浏览器 · opensource<br>
+    <a href="index.html">协议控制台</a> · ECDSA + SHA-256 + OpenPGP · 全部本地运算
+  </div>
+</div>
+
+<!-- import modal -->
+<div class="modal-bg" id="imp-modal">
+  <div class="modal">
+    <h3>导入 CLI 数据空间</h3>
+    <p style="font:12px var(--mono);color:var(--dim);margin-bottom:10px">粘贴 <code>.prober/ledger.json</code> 内容以浏览 CLI 生成的数据块：</p>
+    <textarea id="imp-ledger" placeholder='[{"idx":0,"id":"ag-...","chainHash":"..."}]'></textarea>
+    <div class="m-act">
+      <button class="m-cl" onclick="document.getElementById('imp-modal').classList.remove('show')">取消</button>
+      <button class="m-ok" onclick="doImport()">导入</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const GPG_CA_KEY = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mDMEamdMfxYJKwYBBAHaRw8BAQdAZUTS4h498msUthAuOzqMrn4DzyJo6TiWvUhM
+DPLZa2u0PEpNS3N0dWRpby1tay1kYXRhZm9yLWRhdGFzZXRfR1BHLUNBLTAgPG1h
+a2VlbnRyb3B5QHllYWgubmV0PohyBBMWCAAaBAsJCAcCFQgCFgECGQEFgmpnTH8C
+ngECmwMACgkQ+NqqAyU6c2c2egD/YiB+76NAYjHsFkbMnejIwBoxbzDaTbvGIcbe
+Y2DGZIwBAOz5p9uD4Jr+jVM4l5MTZui3lvDr4N+Z0Kmfd2Q8dJYOuDgEamdMfxIK
+KwYBBAGXVQEFAQEHQK+zxauddypKgHGsDwXY6TvOrU6AF6l669qJK8sU10hVAwEI
+B4h4BBgWCAAJBYJqZ0x/ApsMACEJEPjaqgMlOnNnFiEEIcTnZrtWqPxVCZYj+Nqq
+AyU6c2emuwEAnsKe9uNGUZ9hWgR4DbO8uu2mrGWUx87i3fHVsqM+J40A+gIQ6uED
+EBLdD3WqIKJgCm8GBU74MoIL+Bu+iueRiygH
+=mySC
+-----END PGP PUBLIC KEY BLOCK-----`;
+const GENESIS = '0'.repeat(64);
+
+/* ---------- data ---------- */
+function getLedger(){
+  try{ return JSON.parse(localStorage.getItem('p2p_ledger')||'[]'); }catch{ return []; }
+}
+function getStore(){
+  try{ return JSON.parse(localStorage.getItem('p2p_store')||'{}'); }catch{ return {}; }
+}
+let _ledger = getLedger();
+let _store = getStore();
+let _filter = '';
+
+/* 回退：localStorage 为空时从 /data/ 端点加载 CLI 导出的数据空间 */
+async function loadFromEndpoint(){
+  if(_ledger.length) return; // 已有浏览器数据，不覆盖
+  try{
+    const r = await fetch('/data/ledger.json');
+    if(!r.ok) return;
+    const data = await r.json();
+    if(Array.isArray(data) && data.length){ _ledger = data; }
+    try{ const sr = await fetch('/data/agreements.json'); if(sr.ok){ _store = await sr.json(); } }catch{}
+  }catch(e){ /* 静默：可能非 CLI 导出环境 */ }
+}
+
+function esc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fmtTime(t){ try{ return new Date(t).toLocaleString('zh-CN',{hour12:false}); }catch{ return t||''; } }
+function short(s,n){ return String(s||'').slice(0,n||16)+(String(s||'').length>n?'…':''); }
+
+/* ---------- GPG-CA ---------- */
+let GPG_CA=null, GPG_CA_FP='';
+async function loadCa(){
+  try{
+    const k = await openpgp.readKey({armoredKey:GPG_CA_KEY});
+    GPG_CA = k; GPG_CA_FP = k.getFingerprint().toUpperCase();
+    const uid = k.users[0]?.userID?.userID || '—';
+    const algo = k.getAlgorithmInfo ? JSON.stringify(k.getAlgorithmInfo()) : 'EdDSA+ECDH';
+    $('ca-info').innerHTML = `
+      <div class="ca-row"><b>指纹</b>${GPG_CA_FP}</div>
+      <div class="ca-row"><b>标识</b>${esc(uid)}</div>
+      <div class="ca-row"><b>算法</b>EdDSA + ECDH (签名/加密)</div>
+      <div class="ca-row"><b>状态</b><span style="color:var(--green)">✓ 信任根已加载</span></div>`;
+  }catch(e){
+    $('ca-info').innerHTML = '<div class="ca-row"><b>状态</b><span style="color:var(--red)">加载失败</span></div>';
+  }
+}
+
+/* ---------- integrity ---------- */
+async function sha256Hex(s){
+  const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return [...new Uint8Array(d)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function verifyChain(){
+  let prev = GENESIS;
+  for(let i=0;i<_ledger.length;i++){
+    const e = _ledger[i];
+    const expect = await sha256Hex(prev + (e.digest||''));
+    if(e.chainHash && expect !== e.chainHash){
+      $('integrity').className='integrity err';
+      $('integrity-txt').textContent = `链完整性校验失败：块 #${i} chainHash 不匹配（可能被篡改）`;
+      return false;
+    }
+    prev = e.chainHash || expect;
+  }
+  $('integrity').className='integrity ok';
+  $('integrity-txt').textContent = `链完整性校验通过：${_ledger.length} 个数据块 SHA-256 链式连接，无篡改`;
+  return true;
+}
+
+/* ---------- stats ---------- */
+function renderStats(){
+  const ag = Object.values(_store);
+  const probes = _ledger.filter(e=>e.currency==='PROBE');
+  const enc = _ledger.filter(e=>e.encrypted);
+  const paid = _ledger.filter(e=>e.status==='paid');
+  $('stats').innerHTML = `
+    <div class="stat"><div class="n">${_ledger.length}</div><div class="l">数据块</div></div>
+    <div class="stat"><div class="n">${ag.length}</div><div class="l">协议</div></div>
+    <div class="stat"><div class="n">${probes.length}</div><div class="l">探针</div></div>
+    <div class="stat ${enc.length?'ok':''}"><div class="n">${enc.length}</div><div class="l">GPG加密</div></div>
+    <div class="stat ${paid.length?'ok':'warn'}"><div class="n">${paid.length}</div><div class="l">已结清</div></div>`;
+}
+
+/* ---------- chain viz ---------- */
+function renderChain(){
+  if(!_ledger.length){
+    $('chain-viz').innerHTML = '<div class="empty" style="width:100%">数据空间为空（仅创世块 0x0000…0000）</div>';
+    return;
+  }
+  // genesis block (virtual)
+  let html = `<div class="block genesis" onclick="showDetail(-1)">
+    <div class="b-idx">创世</div>
+    <div class="b-type">⬡</div>
+    <div class="b-id">GENESIS</div>
+    <div class="b-hash">${short(GENESIS,20)}…</div>
+  </div>`;
+  for(const e of _ledger){
+    const isProbe = e.currency==='PROBE';
+    html += `<div class="link-arrow">⟶</div>`;
+    html += `<div class="block" onclick="showDetail(${e.idx})">
+      <div class="b-idx">#${e.idx}</div>
+      <div class="b-type">${isProbe?'🔍':'⚖'}</div>
+      <div class="b-id">${esc(short(e.id,18))}</div>
+      <div class="b-hash">${esc(short(e.chainHash,16))}…</div>
+      <div class="b-badges">
+        ${e.encrypted?'<span class="bdg enc">GPG</span>':''}
+        <span class="bdg ${e.status==='paid'?'st':'pend'}">${e.status==='paid'?'结清':(e.status==='executed'?'执行':'待签')}</span>
+      </div>
+    </div>`;
+  }
+  $('chain-viz').innerHTML = html;
+}
+
+/* ---------- block list ---------- */
+function renderList(){
+  const items = _filter
+    ? _ledger.filter(e => (e.id+e.payer+e.payee+e.chainHash+e.digest).toLowerCase().includes(_filter.toLowerCase()))
+    : _ledger;
+  if(!items.length){
+    $('b-list').innerHTML = '<div class="empty">'+(_filter?'无匹配结果':'数据空间为空，前往 <a href="index.html">协议控制台</a> 创建协议或探针')+'</div>';
+    return;
+  }
+  $('b-list').innerHTML = items.slice().reverse().map(e=>{
+    const isProbe = e.currency==='PROBE';
+    return `<div class="b-row" onclick="showDetail(${e.idx})">
+      <div class="r-top">
+        <span class="r-idx">#${e.idx}</span>
+        <span class="r-type">${isProbe?'🔍':'⚖'}</span>
+        <span class="r-id">${esc(e.id)}</span>
+        <span class="r-time">${fmtTime(e.time)}</span>
+      </div>
+      <div class="r-mid">
+        <span><b>主体</b>${esc(e.payer)} → ${esc(e.payee)}</span>
+        <span><b>值</b>${esc(e.amount)} ${esc(e.currency)}</span>
+        ${e.encrypted?'<span style="color:var(--cyan)"><b>加密</b>GPG-CA</span>':''}
+        <span><b>状态</b>${esc(e.status)}</span>
+      </div>
+      <div class="r-hashes">
+        <span class="h-l">prev</span> ${esc(e.prevHash)}<br>
+        <span class="h-l">chain</span> ${esc(e.chainHash)}<br>
+        <span class="h-l">digest</span> ${esc(e.digest||'—')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- detail ---------- */
+function showDetail(idx){
+  // highlight
+  document.querySelectorAll('.block').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.b-row').forEach(b=>b.classList.remove('active'));
+  if(idx>=0){
+    const blocks = document.querySelectorAll('.block');
+    if(blocks[idx+1]) blocks[idx+1].classList.add('active');
+  }
+  if(idx<0){
+    $('detail').innerHTML = `<div class="detail"><div class="d-head"><h3>创世块 GENESIS</h3><div class="d-sub">链的起点 · all-zero hash</div></div><div class="d-body">
+      <div class="d-row"><div class="k">高度</div><div class="v">genesis (块前)</div></div>
+      <div class="d-row"><div class="k">哈希</div><div class="v mono">${GENESIS}</div></div>
+      <div class="d-row"><div class="k">说明</div><div class="v">创世哈希为全零，作为首块 prevHash 的锚点。所有后续块通过 SHA-256(prevHash + digest) 链式连接。</div></div>
+    </div></div>`;
+    return;
+  }
+  const e = _ledger[idx];
+  if(!e) return;
+  const ag = _store[e.id] || {};
+  const isProbe = e.currency==='PROBE';
+  let rows = `
+    <div class="d-row"><div class="k">高度</div><div class="v">#${e.idx}</div></div>
+    <div class="d-row"><div class="k">ID</div><div class="v">${esc(e.id)}</div></div>
+    <div class="d-row"><div class="k">时间</div><div class="v">${fmtTime(e.time)}</div></div>
+    <div class="d-row"><div class="k">类型</div><div class="v">${isProbe?'探针记录':'P2P 协议'}</div></div>
+    <div class="d-row"><div class="k">付款方</div><div class="v">${esc(e.payer||'—')}</div></div>
+    <div class="d-row"><div class="k">收款方</div><div class="v">${esc(e.payee||'—')}</div></div>
+    <div class="d-row"><div class="k">金额</div><div class="v">${esc(e.amount||'—')} ${esc(e.currency||'')}</div></div>
+    <div class="d-row"><div class="k">状态</div><div class="v">${esc(e.status||'—')}</div></div>
+    <div class="d-row"><div class="k">GPG加密</div><div class="v">${e.encrypted?'<span style="color:var(--cyan)">✓ 已加密至 GPG-CA</span>':'未加密'}</div></div>`;
+  if(ag.purpose) rows += `<div class="d-row"><div class="k">用途</div><div class="v">${esc(ag.purpose)}</div></div>`;
+  if(ag.deadline) rows += `<div class="d-row"><div class="k">期限</div><div class="v">${esc(ag.deadline)}</div></div>`;
+  if(ag.method) rows += `<div class="d-row"><div class="k">方式</div><div class="v">${esc(ag.method)}</div></div>`;
+  rows += `<div class="d-row"><div class="k">摘要</div><div class="v mono">${esc(e.digest||'—')}</div></div>`;
+  rows += `<div class="d-row"><div class="k">prevHash</div><div class="v mono">${esc(e.prevHash)}</div></div>`;
+  rows += `<div class="d-row"><div class="k">chainHash</div><div class="v mono">${esc(e.chainHash)}</div></div>`;
+  if(ag.pk) rows += `<div class="d-row"><div class="k">付款方公钥</div><div class="v mono">${esc(short(ag.pk,64))}…</div></div>`;
+  if(ag.sig) rows += `<div class="d-row"><div class="k">付款方签名</div><div class="v mono">${esc(short(ag.sig,64))}…</div></div>`;
+  if(ag.psk) rows += `<div class="d-row"><div class="k">收款方公钥</div><div class="v mono">${esc(short(ag.psk,64))}…</div></div>`;
+  if(ag.psig) rows += `<div class="d-row"><div class="k">收款方签名</div><div class="v mono">${esc(short(ag.psig,64))}…</div></div>`;
+  $('detail').innerHTML = `<div class="detail"><div class="d-head"><h3>${isProbe?'探针记录':'P2P 协议'} · ${esc(e.id)}</h3><div class="d-sub">块 #${e.idx} · ${fmtTime(e.time)}</div></div><div class="d-body">${rows}</div></div>`;
+  $('detail').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+/* ---------- search ---------- */
+function doSearch(){
+  _filter = $('q').value.trim();
+  renderList();
+}
+
+/* ---------- import ---------- */
+function doImport(){
+  const txt = $('imp-ledger').value.trim();
+  if(!txt) return;
+  try{
+    const data = JSON.parse(txt);
+    if(!Array.isArray(data)) throw new Error('非数组');
+    _ledger = data;
+    _store = {};
+    renderAll();
+    document.getElementById('imp-modal').classList.remove('show');
+    $('imp-ledger').value='';
+  }catch(e){
+    alert('JSON 解析失败：'+e.message);
+  }
+}
+
+/* ---------- render all ---------- */
+async function renderAll(){
+  renderStats();
+  renderChain();
+  renderList();
+  await verifyChain();
+}
+
+/* ---------- init ---------- */
+window.addEventListener('load', async ()=>{
+  await loadCa();
+  await loadFromEndpoint();
+  await renderAll();
+  $('q').addEventListener('keydown', e=>{ if(e.key==='Enter') doSearch(); });
+});
+</script>
+</body>
+</html>

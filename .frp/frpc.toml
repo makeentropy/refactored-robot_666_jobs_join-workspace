@@ -1,10 +1,18 @@
-# FRP 客户端配置 — prober-cli 自动生成
+# FRP DDNS 公链配置 — prober-cli 自动生成
+# 用法: ./prober-cli.sh frp ddns [your-ddns-domain.com]
 serverAddr = "free.frp.io"
 serverPort = 7000
 
 [[proxies]]
-name = "prober-web"
-type = "tcp"
+name = "prober-web-ddns"
+type = "http"
 localIP = "127.0.0.1"
 localPort = 8080
-remotePort = 0
+customDomains = ["prober.jmkstudio.gov"]
+
+[[proxies]]
+name = "prober-data-ddns"
+type = "http"
+localIP = "127.0.0.1"
+localPort = 8080
+customDomains = ["data.prober.jmkstudio.gov"]
