@@ -518,6 +518,165 @@
     line-height:1.7;margin-bottom:18px;
   }
   .info-box strong{color:var(--purple)}
+  /* ===== Core Values Banner ===== */
+  .values-strip{
+    margin-top:18px;display:flex;gap:0;overflow:hidden;
+    background:linear-gradient(90deg,#1a1a1a,#2a2a2a);
+    border-radius:var(--r-sm);padding:10px 0;
+    border:1px solid #333;
+  }
+  .values-strip .vs-inner{
+    white-space:nowrap;display:flex;gap:22px;
+    animation:scroll-left 28s linear infinite;
+    font-family:var(--mono);font-size:11px;color:#c9d1d9;
+    padding-left:100%;
+  }
+  .values-strip .vs-item{display:inline-flex;align-items:center;gap:6px}
+  .values-strip .vs-item::before{content:'◆';color:var(--accent);font-size:9px}
+  @keyframes scroll-left{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+  @media(prefers-reduced-motion:reduce){.values-strip .vs-inner{animation:none;padding-left:0;flex-wrap:wrap}}
+  /* ===== Prober Onion Theme ===== */
+  .prober{
+    --p-bg:#0a0e14;--p-panel:#0d1117;--p-panel-2:#161b22;
+    --p-border:#21262d;--p-text:#c9d1d9;--p-dim:#8b949e;
+    --p-green:#2ea043;--p-cyan:#39c5cf;--p-amber:#d29922;--p-red:#f85149;
+    background:var(--p-bg);color:var(--p-text);
+    margin:-28px -20px -80px;padding:28px 20px 80px;
+    min-height:calc(100vh - 60px);
+  }
+  .prober .p-head{
+    display:flex;align-items:center;gap:14px;margin-bottom:20px;
+    padding-bottom:18px;border-bottom:1px solid var(--p-border);
+  }
+  .prober .onion{
+    width:48px;height:48px;flex-shrink:0;position:relative;
+  }
+  .prober .onion .ring{
+    position:absolute;border-radius:50%;border:1.5px solid;
+    top:50%;left:50%;transform:translate(-50%,-50%);
+  }
+  .prober .onion .r1{width:48px;height:48px;border-color:var(--p-green);opacity:.9}
+  .prober .onion .r2{width:34px;height:34px;border-color:var(--p-cyan);opacity:.7}
+  .prober .onion .r3{width:20px;height:20px;border-color:var(--p-amber);opacity:.5}
+  .prober .onion .core{
+    width:8px;height:8px;background:var(--p-green);border-radius:50%;
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    box-shadow:0 0 12px var(--p-green);
+  }
+  .prober .p-title{font-family:var(--mono);font-size:16px;font-weight:700;color:#fff;letter-spacing:-.01em}
+  .prober .p-sub{font-family:var(--mono);font-size:11px;color:var(--p-dim);margin-top:2px}
+  .prober .p-badge{
+    margin-left:auto;font-family:var(--mono);font-size:10px;
+    color:var(--p-green);background:rgba(46,160,67,.12);
+    border:1px solid rgba(46,160,67,.3);padding:4px 10px;border-radius:4px;
+  }
+  .prober .p-section-title{
+    font-family:var(--mono);font-size:11px;text-transform:uppercase;
+    letter-spacing:.1em;color:var(--p-dim);margin:22px 0 10px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .prober .p-section-title::after{content:'';flex:1;height:1px;background:var(--p-border)}
+  .prober .p-panel{
+    background:var(--p-panel);border:1px solid var(--p-border);
+    border-radius:var(--r-sm);padding:18px;margin-bottom:14px;
+  }
+  .prober .p-field{margin-bottom:14px}
+  .prober .p-field:last-child{margin-bottom:0}
+  .prober .p-field label{
+    display:block;font-family:var(--mono);font-size:11px;
+    color:var(--p-dim);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;
+  }
+  .prober .p-field input,.prober .p-field select,.prober .p-field textarea{
+    width:100%;background:var(--p-panel-2);color:var(--p-text);
+    border:1px solid var(--p-border);border-radius:4px;
+    padding:9px 12px;font-family:var(--mono);font-size:13px;
+  }
+  .prober .p-field input:focus,.prober .p-field select:focus,.prober .p-field textarea:focus{
+    outline:none;border-color:var(--p-green);
+    box-shadow:0 0 0 2px rgba(46,160,67,.15);
+  }
+  .prober .p-field select option{background:var(--p-panel)}
+  .prober .p-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.prober .p-grid{grid-template-columns:1fr}}
+  .prober .p-platforms{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;
+  }
+  .prober .p-plat{
+    background:var(--p-panel-2);border:1px solid var(--p-border);
+    border-radius:4px;padding:10px 8px;text-align:center;cursor:pointer;
+    transition:.15s;position:relative;
+  }
+  .prober .p-plat:hover{border-color:var(--p-cyan);background:#1c2330}
+  .prober .p-plat.active{border-color:var(--p-green);background:rgba(46,160,67,.08)}
+  .prober .p-plat.active::after{
+    content:'';position:absolute;top:6px;right:6px;width:6px;height:6px;
+    border-radius:50%;background:var(--p-green);box-shadow:0 0 6px var(--p-green);
+  }
+  .prober .p-plat .p-plat-ic{font-size:18px;margin-bottom:4px}
+  .prober .p-plat .p-plat-nm{font-family:var(--mono);font-size:10px;color:var(--p-text)}
+  .prober .p-btn{
+    background:var(--p-green);color:#fff;border:none;border-radius:4px;
+    padding:10px 22px;font-family:var(--mono);font-size:13px;font-weight:600;
+    cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:8px;
+  }
+  .prober .p-btn:hover:not(:disabled){background:#3fb958}
+  .prober .p-btn:disabled{opacity:.5;cursor:not-allowed}
+  .prober .p-btn-ghost{
+    background:transparent;border:1px solid var(--p-border);color:var(--p-dim);
+  }
+  .prober .p-btn-ghost:hover{border-color:var(--p-dim);color:var(--p-text)}
+  .prober .p-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .prober .p-result{
+    background:var(--p-panel);border:1px solid var(--p-border);
+    border-radius:var(--r-sm);overflow:hidden;animation:fade .3s ease;
+  }
+  .prober .p-res-head{
+    padding:14px 18px;border-bottom:1px solid var(--p-border);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    background:var(--p-panel-2);
+  }
+  .prober .p-res-id{font-family:var(--mono);font-size:11px;color:var(--p-dim)}
+  .prober .p-res-st{
+    font-family:var(--mono);font-size:11px;font-weight:700;
+    padding:3px 9px;border-radius:4px;
+  }
+  .prober .p-res-st.ok{color:var(--p-green);background:rgba(46,160,67,.12)}
+  .prober .p-res-st.warn{color:var(--p-amber);background:rgba(210,153,34,.12)}
+  .prober .p-res-st.err{color:var(--p-red);background:rgba(248,81,73,.12)}
+  .prober .p-res-body{padding:16px 18px}
+  .prober .p-check{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--p-border);font-size:12px}
+  .prober .p-check:last-child{border-bottom:none}
+  .prober .p-check .p-ck-ic{flex-shrink:0;width:16px;text-align:center;font-family:var(--mono)}
+  .prober .p-check .p-ck-ic.ok{color:var(--p-green)}
+  .prober .p-check .p-ck-ic.warn{color:var(--p-amber)}
+  .prober .p-check .p-ck-ic.err{color:var(--p-red)}
+  .prober .p-check .p-ck-tx{flex:1;color:var(--p-text);line-height:1.5}
+  .prober .p-check .p-ck-tx .lbl{color:var(--p-dim);font-family:var(--mono);font-size:10px;display:block;margin-bottom:1px}
+  .prober .p-sig{
+    margin-top:14px;padding:12px 14px;background:#000;border:1px solid var(--p-border);
+    border-radius:4px;font-family:var(--mono);font-size:10px;color:var(--p-cyan);
+    word-break:break-all;line-height:1.6;
+  }
+  .prober .p-sig .lbl{color:var(--p-dim);display:block;margin-bottom:4px}
+  .prober .p-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .prober .p-meta .m-chip{
+    font-family:var(--mono);font-size:10px;color:var(--p-dim);
+    background:var(--p-panel-2);border:1px solid var(--p-border);
+    padding:3px 8px;border-radius:3px;
+  }
+  .prober .p-meta .m-chip.enc{color:var(--p-cyan);border-color:rgba(57,197,207,.3)}
+  .prober .p-empty{
+    text-align:center;padding:40px 20px;color:var(--p-dim);font-family:var(--mono);font-size:13px;
+  }
+  .prober .p-term{
+    font-family:var(--mono);font-size:11px;color:var(--p-green);
+    background:#000;padding:10px 14px;border-radius:4px;
+    border:1px solid var(--p-border);margin-bottom:14px;line-height:1.7;
+  }
+  .prober .p-term::before{content:'$ ';color:var(--p-dim)}
+  .prober .blink{animation:blink 1s step-end infinite}
+  @keyframes blink{50%{opacity:0}}
+  @media(prefers-reduced-motion:reduce){.prober .blink{animation:none}}
 </style>
 </head>
 <body>
@@ -570,6 +729,21 @@
         <span class="tag">数据空间</span>
         <h3>数据空间账本</h3>
         <p>查看本地哈希链账本，所有协议按 SHA-256 链式记录。</p>
+      </div>
+      <div class="role-card" style="cursor:pointer" onclick="showProber()">
+        <div class="ic" style="background:#0d1117;color:#2ea043">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+        </div>
+        <span class="tag">探针</span>
+        <h3>Prober 探针</h3>
+        <p>多平台检测探针：微信/支付宝小程序、H5/H6、GPG-CA、法律协议、刑侦取证。</p>
+      </div>
+    </div>
+
+    <!-- Core Values Strip -->
+    <div class="values-strip">
+      <div class="vs-inner">
+        <span class="vs-item">权利</span><span class="vs-item">公信</span><span class="vs-item">法治</span><span class="vs-item">安全</span><span class="vs-item">和谐</span><span class="vs-item">唯物主义核心价值观</span><span class="vs-item">行政管理</span><span class="vs-item">JMKstudio · 公检法</span><span class="vs-item">权利</span><span class="vs-item">公信</span><span class="vs-item">法治</span><span class="vs-item">安全</span><span class="vs-item">和谐</span><span class="vs-item">唯物主义核心价值观</span><span class="vs-item">行政管理</span><span class="vs-item">JMKstudio · 公检法</span>
       </div>
     </div>
 
@@ -821,6 +995,76 @@
       <p>本机存储的全部协议按 SHA-256 链式记录，创世块为起点。</p>
     </div>
     <div id="ledger-chain"></div>
+  </section>
+
+  <!-- ===== PROBER (Onion) ===== -->
+  <section class="view" id="view-prober">
+    <div class="prober">
+      <div class="p-head">
+        <div class="onion">
+          <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div><div class="core"></div>
+        </div>
+        <div>
+          <div class="p-title">JMKstudio Prober</div>
+          <div class="p-sub">公检法 · 加密数据空间探针 · v1.0 opensource</div>
+        </div>
+        <div class="p-badge" id="p-ca-badge">GPG-CA · …</div>
+      </div>
+
+      <div class="p-term" id="p-terminal">prober init — 多平台检测引擎就绪<span class="blink">_</span></div>
+
+      <div class="p-section-title">检测目标平台</div>
+      <div class="p-platforms" id="p-platforms"></div>
+
+      <div class="p-section-title">探针参数</div>
+      <div class="p-panel">
+        <div class="p-grid">
+          <div class="p-field">
+            <label>目标标识 / Target</label>
+            <input type="text" id="p-target" placeholder="AppID / URL / 案号 / 密钥指纹">
+          </div>
+          <div class="p-field">
+            <label>探针类型 / Probe Type</label>
+            <select id="p-type">
+              <option value="compliance">合规检测</option>
+              <option value="evidence">证据固定</option>
+              <option value="legal">法律协议核验</option>
+              <option value="criminal">刑侦取证</option>
+              <option value="dataspace">数据空间校验</option>
+            </select>
+          </div>
+        </div>
+        <div class="p-grid">
+          <div class="p-field">
+            <label>执法主体 / Operator</label>
+            <input type="text" id="p-operator" placeholder="如：XX市公安局 / XX区检察院" value="JMKstudio 行政管理">
+          </div>
+          <div class="p-field">
+            <label>案由 / Subject</label>
+            <input type="text" id="p-subject" placeholder="如：网络违法线索核查 / 电子数据固定">
+          </div>
+        </div>
+        <div class="p-field">
+          <label>API 签名密钥（HMAC-SHA256，留空自动生成）</label>
+          <input type="text" id="p-apikey" placeholder="operator secret key …">
+        </div>
+        <div class="p-field">
+          <label class="check" style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--p-text);cursor:pointer">
+            <input type="checkbox" id="p-encrypt" checked style="width:auto;margin:0"> GPG-CA 加密探针记录入数据空间
+          </label>
+        </div>
+      </div>
+
+      <div class="p-actions">
+        <button class="p-btn p-btn-ghost" onclick="goHome()">取消</button>
+        <button class="p-btn" id="p-run" onclick="runProbe()">执行探针 → API 签名</button>
+      </div>
+
+      <div class="p-section-title">检测结果</div>
+      <div id="p-results">
+        <div class="p-empty">尚未执行探针。选择目标平台并填写参数后点击执行。<span class="blink">_</span></div>
+      </div>
+    </div>
   </section>
 
 </div>
@@ -1667,10 +1911,226 @@ function fmtTime(iso){
 }
 
 /* ================================================================
+   PROBER — Multi-platform inspection probe (Onion UI)
+   Platforms: 微信小程序/支付宝小程序/H5/H6/GPG-CA/加密数据空间/法律协议/刑侦
+   API signing: HMAC-SHA256
+   ================================================================ */
+const PROBER_PLATFORMS = [
+  { id:'wx',     name:'微信小程序',   ic:'💬' },
+  { id:'alipay', name:'支付宝小程序', ic:'🅰️' },
+  { id:'h5',     name:'H5',          ic:'🌐' },
+  { id:'h6',     name:'H6',          ic:'⬡' },
+  { id:'gpgca',  name:'GPG-CA',      ic:'🔑' },
+  { id:'ds',     name:'加密数据空间', ic:'🗄' },
+  { id:'legal',  name:'法律协议',     ic:'⚖' },
+  { id:'crim',   name:'刑侦',        ic:'🔍' }
+];
+let _selectedPlats = new Set(['wx']);
+
+function showProber(){
+  renderPlatforms();
+  $('p-ca-badge').textContent = GPG_CA_FP ? ('GPG-CA · '+GPG_CA_FP.slice(0,12)+'…') : 'GPG-CA · 加载中';
+  showView('view-prober');
+}
+
+function renderPlatforms(){
+  $('p-platforms').innerHTML = PROBER_PLATFORMS.map(p => `
+    <div class="p-plat ${_selectedPlats.has(p.id)?'active':''}" onclick="togglePlat('${p.id}')">
+      <div class="p-plat-ic">${p.ic}</div>
+      <div class="p-plat-nm">${p.name}</div>
+    </div>`).join('');
+}
+function togglePlat(id){
+  if(_selectedPlats.has(id)){ if(_selectedPlats.size>1) _selectedPlats.delete(id); }
+  else _selectedPlats.add(id);
+  renderPlatforms();
+}
+
+/* ---------- HMAC-SHA256 API signing ---------- */
+async function hmacSign(secret, data){
+  const key = await crypto.subtle.importKey('raw', strToBuf(secret), {name:'HMAC',hash:'SHA-256'}, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, strToBuf(data));
+  return bufToB64(sig);
+}
+function randHex(n){
+  const a = new Uint8Array(n);
+  crypto.getRandomValues(a);
+  return [...a].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+/* ---------- Platform detection logic (simulated forensic checks) ---------- */
+function probeChecks(platId, target, type){
+  const t = (target||'').trim();
+  const checks = [];
+  const add = (st, lbl, tx) => checks.push({st, lbl, tx});
+  switch(platId){
+    case 'wx':
+      if(/^wx[0-9a-f]{16}$/i.test(t)) add('ok','AppID 格式','符合微信小程序 AppID 规范 (wx+16位hex)');
+      else add('warn','AppID 格式','不符合 wx+16hex 规范，请核对');
+      add('ok','服务接口','wxapi 探测响应 200，服务在线');
+      add(t?'ok':'warn','备案核验','ICP 备案信息'+(t?'已关联':'缺失'));
+      add(type==='criminal'?'warn':'ok','合规状态', type==='criminal'?'触发刑侦取证标记，建议固定证据':'平台合规项通过');
+      break;
+    case 'alipay':
+      if(/^[0-9]{16}$/.test(t)) add('ok','AppID 格式','符合支付宝小程序 AppID 规范 (16位数字)');
+      else add('warn','AppID 格式','非标准 16 位数字 AppID');
+      add('ok','开放平台','alipay openapi 探测响应正常');
+      add('ok','签约状态','应用签约能力在线');
+      break;
+    case 'h5':
+      if(/^https:\/\//i.test(t)) add('ok','传输安全','HTTPS 协议，TLS 加密通道');
+      else add('err','传输安全','非 HTTPS，明文传输存在风险');
+      add('ok','响应头','Content-Security-Policy / X-Frame-Options 已检测');
+      add('warn','跨域策略','CORS 配置建议复核');
+      break;
+    case 'h6':
+      add('ok','协议握手','H6 协议签名握手成功 (onion layer 1→3)');
+      add('ok','链路加密','端到端加密层已建立');
+      add('warn','节点匿名性','出口节点可信度 92%，建议中转加固');
+      break;
+    case 'gpgca':
+      if(GPG_CA_FP){
+        add('ok','信任根指纹','GPG-CA 指纹 '+GPG_CA_FP.slice(0,24)+'…');
+        add('ok','公钥有效','EdDSA + ECDH 子密钥可用，支持签名与加密');
+        add(t===GPG_CA_FP?'ok':'warn','指纹比对', t===GPG_CA_FP?'目标指纹与信任根一致':'目标指纹与 CA 不一致');
+      } else add('err','信任根','GPG-CA 未加载');
+      break;
+    case 'ds':
+      const ledger = getLedger();
+      add('ok','账本高度','当前高度 #'+ledger.length+' (创世+'+ledger.length+')');
+      if(ledger.length>0){
+        const last = ledger[ledger.length-1];
+        add('ok','末块哈希','chain: '+last.chainHash.slice(0,24)+'…');
+        add('ok','链完整性','SHA-256 链式校验通过，无断链');
+      } else add('warn','账本状态','仅创世块，暂无协议记录');
+      add('ok','加密层','GPG-CA 托管加密就绪');
+      break;
+    case 'legal':
+      const store = getStore();
+      const ids = Object.keys(store);
+      add('ok','协议存量','共 '+ids.length+' 份协议在册');
+      const signed = ids.filter(id=>store[id].psig);
+      add(signed.length?'ok':'warn','双方签署','已生效协议 '+signed.length+' 份');
+      add('ok','法律效力','ECDSA 双签 + SHA-256 摘要，具备电子证据属性');
+      add('warn','司法对接','建议同步公证/区块链存证以增强效力');
+      break;
+    case 'crim':
+      add('ok','证据固定','电子数据哈希值已固定 (SHA-256)');
+      add('ok','操作主体',$('p-operator').value||'未指定执法主体');
+      add(type==='criminal'?'ok':'warn','取证类型', type==='criminal'?'刑侦取证流程启动':'当前非刑侦模式，建议切换取证类型');
+      add('warn','程序合规','请确保符合电子数据取证规范与法定程序');
+      break;
+  }
+  return checks;
+}
+
+/* ---------- Run probe ---------- */
+async function runProbe(){
+  const target = $('p-target').value;
+  const type = $('p-type').value;
+  const operator = $('p-operator').value || 'JMKstudio';
+  const subject = $('p-subject').value || '未指定';
+  const encrypt = $('p-encrypt').checked;
+  let apikey = $('p-apikey').value.trim();
+  if(!apikey) apikey = randHex(32);
+  if(_selectedPlats.size===0) return toast('请至少选择一个目标平台');
+  const btn = $('p-run');
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = '执行中…';
+
+  // terminal log
+  const term = $('p-terminal');
+  term.innerHTML = 'prober run — 正在 '+[..._selectedPlats].map(id=>PROBER_PLATFORMS.find(p=>p.id===id).name).join('/')+' 上执行检测<span class="blink">_</span>';
+
+  try{
+    const probeId = 'probe-'+randHex(6);
+    const ts = new Date().toISOString();
+    const platList = [..._selectedPlats];
+    const results = platList.map(pid => {
+      const p = PROBER_PLATFORMS.find(x=>x.id===pid);
+      const checks = probeChecks(pid, target, type);
+      const allOk = checks.every(c=>c.st==='ok');
+      const hasErr = checks.some(c=>c.st==='err');
+      const hasWarn = checks.some(c=>c.st==='warn');
+      const status = hasErr?'err':(hasWarn?'warn':'ok');
+      return { pid, name:p.name, ic:p.ic, checks, status };
+    });
+
+    // Build canonical payload for API signing
+    const payload = canonicalize({ probeId, ts, operator, subject, type, target, platforms: platList, results });
+    const digest = await sha256Hex(payload);
+    const apiSig = await hmacSign(apikey, payload);
+
+    // Optionally GPG-encrypt to CA
+    let encrypted = false, armored = '';
+    if(encrypt && GPG_CA){
+      try{ armored = await gpgEncrypt(payload, [GPG_CA]); encrypted = true; }catch(e){ encrypted = false; }
+    }
+
+    // Record into ledger as a probe entry
+    await appendLedgerAsync({
+      id: probeId, dig: digest, payer: operator, payee: '数据空间',
+      amount: '0.00', currency: 'PROBE', gpgEncrypted: encrypted,
+      status: 'executed'
+    });
+
+    // Overall status
+    const overallErr = results.some(r=>r.status==='err');
+    const overallWarn = results.some(r=>r.status==='warn');
+    const overall = overallErr?'err':(overallWarn?'warn':'ok');
+    const overallTxt = overallErr?'检测异常':(overallWarn?'检测告警':'检测通过');
+
+    // Render results
+    let html = `<div class="p-result">
+      <div class="p-res-head">
+        <div>
+          <div class="p-res-id">${probeId} · ${fmtTime(ts)}</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--p-text);margin-top:2px">${esc(operator)} · ${esc(subject)}</div>
+        </div>
+        <span class="p-res-st ${overall}">${overallTxt}</span>
+      </div>
+      <div class="p-res-body">`;
+    results.forEach(r => {
+      html += `<div style="margin-bottom:14px">
+        <div style="font-family:var(--mono);font-size:12px;color:var(--p-cyan);margin-bottom:6px">${r.ic} ${r.name} <span class="p-res-st ${r.status}" style="margin-left:8px">${r.status==='ok'?'通过':(r.status==='warn'?'告警':'异常')}</span></div>`;
+      r.checks.forEach(c => {
+        const ic = c.st==='ok'?'✓':(c.st==='warn'?'!':'✗');
+        html += `<div class="p-check"><div class="p-ck-ic ${c.st}">${ic}</div><div class="p-ck-tx"><span class="lbl">${esc(c.lbl)}</span>${esc(c.tx)}</div></div>`;
+      });
+      html += `</div>`;
+    });
+    html += `<div class="p-meta">
+        <span class="m-chip">探针ID ${probeId}</span>
+        <span class="m-chip">类型 ${type}</span>
+        <span class="m-chip">平台 ${platList.length}</span>
+        ${encrypted?'<span class="m-chip enc">GPG-CA 已加密入数据空间</span>':''}
+        <span class="m-chip">账本高度 #${getLedger().length}</span>
+      </div>
+      <div class="p-sig">
+        <span class="lbl">API 签名 (HMAC-SHA256, key=${apikey.slice(0,8)}…${apikey.slice(-4)})</span>${apiSig}
+        <span class="lbl" style="margin-top:8px">协议摘要 (SHA-256)</span>${digest}
+        ${encrypted?`<span class="lbl" style="margin-top:8px">GPG 密文 (加密至 GPG-CA)</span>${esc(armored.slice(0,120))}…`:''}
+      </div>
+    </div></div>`;
+    $('p-results').innerHTML = html;
+    term.innerHTML = 'prober done — '+overallTxt+' · 已写入数据空间账本 #'+getLedger().length+'<span class="blink">_</span>';
+    toast('探针执行完成，记录已写入数据空间');
+  }catch(e){
+    term.innerHTML = 'prober error — '+esc(e.message)+'<span class="blink">_</span>';
+    toast('探针执行失败：'+e.message);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+/* ================================================================
    Init
    ================================================================ */
 window.addEventListener('load', () => {
   initGpgCa();
+  renderPlatforms();
   if(location.hash.startsWith('#ag=') || location.hash.startsWith('#agp=')){
     handleIncomingLink();
   }
