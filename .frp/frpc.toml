@@ -1,0 +1,10 @@
+# FRP 客户端配置 — prober-cli 自动生成
+serverAddr = "free.frp.io"
+serverPort = 7000
+
+[[proxies]]
+name = "prober-web"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 8080
+remotePort = 0

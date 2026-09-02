@@ -1,0 +1,44 @@
+[
+  {
+    "idx": 0,
+    "id": "ag-e39405000157",
+    "digest": "ea54f16751e9175b6ed033dad4b949426f6f772ef96d6ec977e48605f0be485b",
+    "prevHash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "chainHash": "4b07c739da356aedec7de99cce4aae0e68fdb5c8db58697e17517869dcdfa5f7",
+    "time": "2026-09-02T02:54:24.685Z",
+    "payer": "张三",
+    "payee": "李四",
+    "amount": "5000.00",
+    "currency": "CNY",
+    "encrypted": true,
+    "status": "awaiting_payee"
+  },
+  {
+    "idx": 1,
+    "id": "probe-e618fcf126b4",
+    "digest": "e7ad7c8c07f77ac376ef43a177cf14942e5510090acc6cfc74926707d520349f",
+    "prevHash": "4b07c739da356aedec7de99cce4aae0e68fdb5c8db58697e17517869dcdfa5f7",
+    "chainHash": "777f80c2c4eb4448b4582f82b77c10c6d137c52b92778854b4a17aa4a4d76dda",
+    "time": "2026-09-02T02:54:40.703Z",
+    "payer": "JMKstudio CLI",
+    "payee": "数据空间",
+    "amount": "0.00",
+    "currency": "PROBE",
+    "encrypted": true,
+    "status": "executed"
+  },
+  {
+    "idx": 2,
+    "id": "probe-329926dec2c3",
+    "digest": "578ca525ce234899ba9b7b65172fd06cbac3bd3e2c15e023b3b343d47360156d",
+    "prevHash": "777f80c2c4eb4448b4582f82b77c10c6d137c52b92778854b4a17aa4a4d76dda",
+    "chainHash": "c010700ec2f453e08c329bc994b7a854c1477f59f8c04bda6016ae6ea5fa123c",
+    "time": "2026-09-02T02:54:40.918Z",
+    "payer": "JMKstudio CLI",
+    "payee": "数据空间",
+    "amount": "0.00",
+    "currency": "PROBE",
+    "encrypted": false,
+    "status": "executed"
+  }
+]
