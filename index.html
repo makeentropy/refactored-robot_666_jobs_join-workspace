@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>P2P 交易协议 · 签署与收款</title>
+<title>P2P 交易协议 · GPG-CA 数据空间</title>
+<script src="https://cdn.jsdelivr.net/npm/openpgp@5.11.0/dist/openpgp.min.js"></script>
 <style>
   :root{
     --bg:#f6f4ef;
@@ -22,6 +23,8 @@
     --green-bg:#eaf3ea;
     --red:#b3322c;
     --red-bg:#fbeae9;
+    --purple:#5b3e96;
+    --purple-bg:#f0ebf8;
     --mono:'SF Mono','Fira Code','Cascadia Code',Consolas,'Liberation Mono',monospace;
     --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
     --serif:Georgia,'Times New Roman','Songti SC','SimSun',serif;
@@ -54,10 +57,10 @@
   .brand{display:flex;align-items:center;gap:10px;cursor:pointer}
   .brand-mark{
     width:32px;height:32px;border-radius:8px;
-    background:linear-gradient(135deg,var(--accent),var(--accent-d));
+    background:linear-gradient(135deg,var(--accent),var(--purple));
     display:flex;align-items:center;justify-content:center;
     color:#fff;font-weight:700;font-size:15px;
-    box-shadow:0 2px 6px rgba(14,110,110,.3);
+    box-shadow:0 2px 6px rgba(91,62,150,.3);
   }
   .brand-name{font-size:15px;font-weight:600;letter-spacing:-.01em}
   .brand-sub{font-size:11px;color:var(--ink-faint);font-family:var(--mono)}
@@ -76,19 +79,18 @@
   @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @media(prefers-reduced-motion:reduce){.view.active{animation:none}}
   /* ===== Home ===== */
-  .hero{text-align:center;padding:40px 0 36px}
+  .hero{text-align:center;padding:36px 0 32px}
   .hero h1{
     font-family:var(--serif);font-size:30px;font-weight:700;
     letter-spacing:-.02em;line-height:1.25;margin-bottom:10px;
   }
-  .hero p{color:var(--ink-soft);font-size:15px;max-width:460px;margin:0 auto}
+  .hero p{color:var(--ink-soft);font-size:15px;max-width:480px;margin:0 auto}
   .role-grid{
-    display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:28px;
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-top:28px;
   }
-  @media(max-width:560px){.role-grid{grid-template-columns:1fr}}
   .role-card{
     background:var(--paper);border:1px solid var(--line);
-    border-radius:var(--r);padding:26px 22px;cursor:pointer;
+    border-radius:var(--r);padding:24px 20px;cursor:pointer;
     transition:.2s;text-align:left;position:relative;overflow:hidden;
   }
   .role-card:hover{
@@ -96,28 +98,53 @@
     transform:translateY(-2px);
   }
   .role-card .ic{
-    width:42px;height:42px;border-radius:10px;
+    width:40px;height:40px;border-radius:10px;
     display:flex;align-items:center;justify-content:center;
-    font-size:20px;margin-bottom:14px;
+    font-size:19px;margin-bottom:12px;
   }
   .role-card.payer .ic{background:var(--accent-bg);color:var(--accent)}
   .role-card.payee .ic{background:var(--amber-bg);color:var(--amber)}
-  .role-card h3{font-size:16px;margin-bottom:4px}
-  .role-card p{font-size:13px;color:var(--ink-soft);line-height:1.5}
+  .role-card.ledger .ic{background:var(--purple-bg);color:var(--purple)}
+  .role-card h3{font-size:15px;margin-bottom:4px}
+  .role-card p{font-size:12.5px;color:var(--ink-soft);line-height:1.5}
   .role-card .tag{
-    position:absolute;top:16px;right:16px;
+    position:absolute;top:14px;right:14px;
     font-size:10px;font-family:var(--mono);color:var(--ink-faint);
     background:var(--bg);padding:3px 8px;border-radius:20px;
   }
+  /* ===== CA Trust Panel ===== */
+  .ca-panel{
+    margin-top:22px;background:var(--paper);
+    border:1px solid var(--line);border-radius:var(--r);
+    box-shadow:var(--shadow);overflow:hidden;
+  }
+  .ca-panel-head{
+    padding:16px 20px;display:flex;align-items:center;gap:12px;
+    background:linear-gradient(135deg,var(--purple-bg),var(--paper));
+    border-bottom:1px solid var(--line-soft);
+  }
+  .ca-seal{
+    width:38px;height:38px;border-radius:9px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--purple),#3a2766);
+    display:flex;align-items:center;justify-content:center;color:#fff;
+  }
+  .ca-panel-head .ca-title{font-size:14px;font-weight:600}
+  .ca-panel-head .ca-sub{font-size:11px;color:var(--ink-faint);font-family:var(--mono)}
+  .ca-panel-body{padding:16px 20px;font-size:13px;color:var(--ink-soft);line-height:1.7}
+  .ca-row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line-soft)}
+  .ca-row:last-child{border-bottom:none}
+  .ca-row .ca-l{color:var(--ink-faint);font-size:12px;flex-shrink:0}
+  .ca-row .ca-v{font-family:var(--mono);font-size:11.5px;color:var(--ink);word-break:break-all;text-align:right}
+  .ca-row .ca-v.uid{font-family:var(--sans);font-size:12.5px}
   .home-note{
-    margin-top:24px;padding:16px 18px;
+    margin-top:18px;padding:14px 18px;
     background:var(--paper);border:1px dashed var(--line);
-    border-radius:var(--r-sm);font-size:13px;color:var(--ink-soft);
-    line-height:1.7;
+    border-radius:var(--r-sm);font-size:12.5px;color:var(--ink-soft);
+    line-height:1.75;
   }
   .home-note strong{color:var(--ink)}
   .home-note code{
-    font-family:var(--mono);font-size:12px;
+    font-family:var(--mono);font-size:11px;
     background:var(--bg);padding:1px 5px;border-radius:3px;
   }
   /* ===== Form ===== */
@@ -126,6 +153,7 @@
     font-size:11px;font-family:var(--mono);color:var(--accent);
     text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;
   }
+  .page-head.gpg .step{color:var(--purple)}
   .page-head h2{
     font-family:var(--serif);font-size:24px;font-weight:700;
     letter-spacing:-.015em;margin-bottom:4px;
@@ -135,6 +163,7 @@
     background:var(--paper);border:1px solid var(--line);
     border-radius:var(--r);box-shadow:var(--shadow);
   }
+  .card.gpg-card{border-color:#d6ccea}
   .card-body{padding:24px}
   @media(max-width:560px){.card-body{padding:18px}}
   .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -146,6 +175,8 @@
     color:var(--ink-soft);margin-bottom:6px;
   }
   .field label .req{color:var(--red);margin-left:2px}
+  .field label.check{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--ink)}
+  .field label.check input{width:auto;margin:0}
   .field input,.field select,.field textarea{
     width:100%;font-family:var(--sans);font-size:14px;
     color:var(--ink);background:var(--bg);
@@ -153,6 +184,7 @@
     padding:10px 12px;transition:.15s;
   }
   .field textarea{resize:vertical;min-height:72px;line-height:1.6}
+  .field textarea.tall{min-height:120px;font-family:var(--mono);font-size:11px}
   .field input:focus,.field select:focus,.field textarea:focus{
     outline:none;border-color:var(--accent);
     background:var(--paper);box-shadow:0 0 0 3px var(--accent-bg);
@@ -165,6 +197,35 @@
     pointer-events:none;
   }
   .amount-input input{padding-left:42px;font-variant-numeric:tabular-nums}
+  /* GPG section */
+  .gpg-section{margin-top:20px;padding-top:20px;border-top:2px dashed var(--line)}
+  .gpg-section h4{
+    font-size:12px;font-family:var(--mono);text-transform:uppercase;
+    letter-spacing:.08em;color:var(--purple);margin-bottom:4px;
+    display:flex;align-items:center;gap:6px;
+  }
+  .gpg-section h4 .gpg-tag{
+    background:var(--purple-bg);color:var(--purple);
+    padding:2px 7px;border-radius:4px;font-size:10px;
+  }
+  .gpg-section .gpg-desc{font-size:12px;color:var(--ink-faint);margin-bottom:14px}
+  .gpg-opts{display:none}
+  .gpg-opts.show{display:block;animation:fade .25s ease}
+  .keyrec{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .keyrec .chip{
+    font-size:11px;font-family:var(--mono);color:var(--ink-soft);
+    background:var(--bg);border:1px solid var(--line);
+    padding:4px 10px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;
+  }
+  .keyrec .chip.ca{border-color:#c8bae0;color:var(--purple);background:var(--purple-bg)}
+  .keyrec .chip .dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+  .keyrec .chip.ca .dot{background:var(--purple)}
+  .mini-btn{
+    font-size:11px;font-family:var(--sans);border:1px solid var(--line);
+    background:var(--paper);color:var(--ink-soft);padding:5px 10px;
+    border-radius:var(--r-sm);cursor:pointer;transition:.15s;
+  }
+  .mini-btn:hover{border-color:var(--purple);color:var(--purple)}
   /* ===== Buttons ===== */
   .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:8px;
@@ -177,6 +238,8 @@
   .btn-primary:hover:not(:disabled){background:var(--accent-d)}
   .btn-amber{background:var(--amber);color:#fff}
   .btn-amber:hover:not(:disabled){background:#805800}
+  .btn-purple{background:var(--purple);color:#fff}
+  .btn-purple:hover:not(:disabled){background:#3a2766}
   .btn-outline{background:transparent;border:1px solid var(--line);color:var(--ink-soft)}
   .btn-outline:hover{border-color:var(--accent);color:var(--accent)}
   .btn-block{display:flex;width:100%}
@@ -193,7 +256,9 @@
     display:flex;align-items:center;justify-content:center;
     animation:pop .4s cubic-bezier(.34,1.56,.64,1);
   }
+  .check-anim.purple{background:var(--purple-bg)}
   .check-anim svg{width:28px;height:28px;color:var(--green)}
+  .check-anim.purple svg{color:var(--purple)}
   @keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
   @media(prefers-reduced-motion:reduce){.check-anim{animation:none}}
   .share-box h3{font-size:18px;margin-bottom:6px}
@@ -223,6 +288,7 @@
     border:1px solid var(--line);
   }
   .meta-chip strong{color:var(--ink)}
+  .meta-chip.encrypted{border-color:#c8bae0;background:var(--purple-bg);color:var(--purple)}
   /* ===== Agreement Document ===== */
   .doc{
     background:var(--paper);border:1px solid var(--line);
@@ -238,11 +304,6 @@
   }
   .doc-head h3{
     font-family:var(--serif);font-size:19px;font-weight:700;
-  }
-  .doc-head .doc-status{
-    display:inline-flex;align-items:center;gap:6px;
-    font-size:12px;font-weight:600;
-    padding:4px 10px;border-radius:20px;margin-top:8px;
   }
   .status-pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px}
   .status-pill::before{content:'';width:7px;height:7px;border-radius:50%}
@@ -306,24 +367,22 @@
   .sig-pending .dot-anim{width:24px;height:24px;border:2.5px solid var(--line);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
   @media(prefers-reduced-motion:reduce){.sig-pending .dot-anim{animation:none;border-top-color:var(--line)}}
-  /* ===== Verify Badge ===== */
+  /* ===== Verify / Encrypt Badges ===== */
   .verify-badge{
     display:flex;align-items:center;gap:8px;
     background:var(--green-bg);border:1px solid #c8e0c8;
     border-radius:var(--r-sm);padding:10px 14px;font-size:13px;color:var(--green);
     margin-bottom:16px;
   }
+  .verify-badge.purple{background:var(--purple-bg);border-color:#c8bae0;color:var(--purple)}
   .verify-badge.error{background:var(--red-bg);border-color:#e8c5c3;color:var(--red)}
   .verify-badge svg{width:18px;height:18px;flex-shrink:0}
   /* ===== Waiting View ===== */
-  .wait-hero{text-align:center;padding:12px 0 24px}
   .wait-clock{
     font-family:var(--mono);font-size:32px;font-weight:700;
     color:var(--amber);letter-spacing:-.02em;margin:8px 0;
     font-variant-numeric:tabular-nums;
   }
-  .wait-clock.expired{color:var(--red)}
-  .wait-label{font-size:13px;color:var(--ink-soft)}
   .wait-progress{
     height:6px;background:var(--line);border-radius:3px;
     overflow:hidden;margin:16px 0;
@@ -334,7 +393,6 @@
   }
   .wait-progress .bar.expired{background:var(--red)}
   .actions-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
-  /* ===== Countdown for payee waiting ===== */
   .countdown-bar{
     background:var(--amber-bg);border:1px solid #f0dca0;
     border-radius:var(--r-sm);padding:14px 18px;margin-bottom:16px;
@@ -354,6 +412,8 @@
   .countdown-bar.expired{background:var(--red-bg);border-color:#e8c5c3}
   .countdown-bar.expired .cd-icon{color:var(--red)}
   .countdown-bar.expired .cd-time{color:var(--red)}
+  .countdown-bar.paid{background:var(--green-bg);border-color:#c8e0c8}
+  .countdown-bar.paid .cd-icon{color:var(--green)}
   /* ===== Toast ===== */
   .toast{
     position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
@@ -363,6 +423,42 @@
     box-shadow:0 4px 20px rgba(0,0,0,.2);
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  /* ===== Ledger ===== */
+  .chain{position:relative}
+  .block{
+    background:var(--paper);border:1px solid var(--line);
+    border-radius:var(--r);padding:16px 18px;margin-bottom:0;
+    position:relative;
+  }
+  .block.genesis{border-style:dashed;background:var(--bg)}
+  .block+ .block{margin-top:12px}
+  .block:not(:last-child)::after{
+    content:'';position:absolute;left:50%;bottom:-12px;
+    width:2px;height:12px;background:var(--line);transform:translateX(-50%);
+  }
+  .block-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+  .block-idx{
+    font-family:var(--mono);font-size:11px;font-weight:700;
+    background:var(--purple-bg);color:var(--purple);
+    padding:3px 8px;border-radius:4px;
+  }
+  .block.genesis .block-idx{background:var(--line-soft);color:var(--ink-faint)}
+  .block-time{font-size:11px;color:var(--ink-faint);font-family:var(--mono)}
+  .block-hash{
+    font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);
+    word-break:break-all;background:var(--bg);padding:8px 10px;
+    border-radius:var(--r-sm);border:1px solid var(--line);line-height:1.6;
+  }
+  .block-hash .lbl{color:var(--ink-faint)}
+  .block-summary{font-size:13px;color:var(--ink);margin-top:8px}
+  .block-summary strong{font-family:var(--mono)}
+  .block-badges{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .block-badge{
+    font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:4px;
+  }
+  .block-badge.enc{background:var(--purple-bg);color:var(--purple)}
+  .block-badge.exec{background:var(--accent-bg);color:var(--accent)}
+  .block-badge.paid{background:var(--green-bg);color:var(--green)}
   /* ===== Misc ===== */
   .divider{height:1px;background:var(--line-soft);margin:20px 0}
   .empty-state{text-align:center;padding:40px 20px;color:var(--ink-faint)}
@@ -381,6 +477,12 @@
   .alert-warn{background:var(--amber-bg);border:1px solid #f0dca0;color:var(--amber)}
   .alert-err{background:var(--red-bg);border:1px solid #e8c5c3;color:var(--red)}
   .alert svg{width:18px;height:18px;flex-shrink:0;margin-top:1px}
+  .info-box{
+    background:var(--purple-bg);border:1px solid #d6ccea;
+    border-radius:var(--r-sm);padding:14px 16px;font-size:13px;color:var(--ink-soft);
+    line-height:1.7;margin-bottom:18px;
+  }
+  .info-box strong{color:var(--purple)}
 </style>
 </head>
 <body>
@@ -392,7 +494,7 @@
       <div class="brand-mark">P</div>
       <div>
         <div class="brand-name">P2P Protocol</div>
-        <div class="brand-sub">ECDSA · SHA-256</div>
+        <div class="brand-sub">ECDSA · GPG-CA · SHA-256</div>
       </div>
     </div>
     <div class="top-actions">
@@ -407,7 +509,7 @@
   <section class="view active" id="view-home">
     <div class="hero">
       <h1>点对点交易协议</h1>
-      <p>基于 ECDSA 数字签名与 SHA-256 摘要的 P2P 交易协议。付款方生成签署链接发送给收款方，双方签署后协议生效，收款方等待收款。</p>
+      <p>基于 ECDSA 签名 + SHA-256 摘要 + GPG-CA 加密的 P2P 交易协议。可选 GPG 加密将协议数据封入分布式数据空间，本地哈希链账本记录全部协议。</p>
     </div>
     <div class="role-grid">
       <div class="role-card payer" onclick="showView('view-create')">
@@ -416,7 +518,7 @@
         </div>
         <span class="tag">发起方</span>
         <h3>发起交易协议</h3>
-        <p>我是付款方，填写交易要素并签署，生成协议链接发给收款方。</p>
+        <p>付款方填写要素并签署，可选 GPG 加密后生成链接发给收款方。</p>
       </div>
       <div class="role-card payee" onclick="checkPending()">
         <div class="ic">
@@ -424,18 +526,40 @@
         </div>
         <span class="tag">收款方</span>
         <h3>查看我的协议</h3>
-        <p>我是收款方，查看已签署的协议、追踪收款状态与倒计时。</p>
+        <p>查阅已签署协议、追踪收款状态与倒计时。</p>
+      </div>
+      <div class="role-card ledger" onclick="showLedger()">
+        <div class="ic">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="5" rx="1"/><rect x="3" y="11" width="18" height="5" rx="1"/><path d="M7 20h10"/></svg>
+        </div>
+        <span class="tag">数据空间</span>
+        <h3>数据空间账本</h3>
+        <p>查看本地哈希链账本，所有协议按 SHA-256 链式记录。</p>
       </div>
     </div>
+
+    <!-- GPG-CA Trust Panel -->
+    <div class="ca-panel">
+      <div class="ca-panel-head">
+        <div class="ca-seal">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <div>
+          <div class="ca-title">GPG-CA 信任根</div>
+          <div class="ca-sub" id="ca-status">加载中…</div>
+        </div>
+      </div>
+      <div class="ca-panel-body" id="ca-body"></div>
+    </div>
+
     <div class="home-note">
       <strong>协议流程</strong><br>
-      1. 付款方填写交易要素 → 应用生成 ECDSA 密钥对并对协议摘要签名<br>
-      2. 生成的链接以 <code>#ag=</code> 携带完整协议数据（自包含），发给收款方<br>
-      3. 收款方打开链接验证付款方签名 → 填写身份并签署 → 协议生效<br>
-      4. 收款方进入"等待收款"状态，按付款期限倒计时
+      1. 付款方填写交易要素 → ECDSA 签名 → <strong>可选 GPG 加密至收款方公钥/GPG-CA</strong> → 生成自包含链接<br>
+      2. 收款方打开链接 → <strong>GPG 解密</strong> → 验证付款方签名 → 签署 → 协议生效<br>
+      3. 收款方进入"等待收款"，按期限倒计时；协议写入本地哈希链账本
     </div>
     <div class="footer-note">
-      所有签名运算在浏览器本地完成，密钥不出本机。链接为自包含数据载体，无需服务端。
+      签名与加密运算全部在浏览器本地完成（<code>crypto.subtle</code> + <code>openpgp.js</code>），密钥不出本机。链接为自包含数据载体。
     </div>
   </section>
 
@@ -505,6 +629,37 @@
         </div>
       </div>
     </div>
+
+    <!-- GPG Encryption Section -->
+    <div class="card gpg-card" style="margin-top:18px">
+      <div class="card-body">
+        <div class="gpg-section" style="margin-top:0;padding-top:0;border-top:none">
+          <h4><span class="gpg-tag">GPG-CA</span> 分布式数据空间加密</h4>
+          <div class="gpg-desc">启用后协议数据经 OpenPGP 加密，链接携带密文；仅持私钥方可解密查阅与签署。</div>
+          <div class="field">
+            <label class="check">
+              <input type="checkbox" id="f-gpg" onchange="toggleGpg()"> 启用 GPG 加密
+            </label>
+          </div>
+          <div class="gpg-opts" id="gpg-opts">
+            <div class="field">
+              <label>收款方 GPG 公钥（选填）</label>
+              <textarea id="f-payee-gpg" class="tall" placeholder="-----BEGIN PGP PUBLIC KEY BLOCK-----
+... 粘贴收款方公钥 ..."></textarea>
+              <div class="hint">留空则仅加密至 GPG-CA 信任根（数据空间托管模式）</div>
+              <div class="keyrec" id="gpg-keyrec"></div>
+            </div>
+            <div class="field">
+              <label class="check">
+                <input type="checkbox" id="f-gpg-ca" checked> 同时加密至 GPG-CA 信任根（数据空间托管）
+              </label>
+              <div class="hint">CA 持有私钥可作为数据空间运营方解密托管数据</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="form-actions">
       <button class="btn btn-outline" onclick="goHome()">取消</button>
       <button class="btn btn-primary btn-lg" id="btn-sign-payer" onclick="createAgreement()">
@@ -516,11 +671,11 @@
   <!-- ===== LINK GENERATED ===== -->
   <section class="view" id="view-share">
     <div class="share-box">
-      <div class="check-anim">
+      <div class="check-anim" id="share-anim">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
       </div>
-      <h3>协议已由您签署</h3>
-      <p class="sub">将下方链接发送给收款方，对方打开即可查阅并签署。</p>
+      <h3 id="share-title">协议已由您签署</h3>
+      <p class="sub" id="share-sub">将下方链接发送给收款方，对方打开即可查阅并签署。</p>
       <div class="link-box">
         <div class="link-text" id="share-link"></div>
         <button class="btn btn-primary" onclick="copyLink()" id="btn-copy">复制链接</button>
@@ -536,7 +691,39 @@
     </div>
   </section>
 
-  <!-- ===== SIGN (PAYEE) ===== -->
+  <!-- ===== DECRYPT (Payee) ===== -->
+  <section class="view" id="view-decrypt">
+    <div class="page-head gpg">
+      <div class="step">GPG · 数据空间解密</div>
+      <h2>解密协议</h2>
+      <p>本协议经 GPG 加密，请提供您的私钥以解密查阅。</p>
+    </div>
+    <div class="info-box">
+      <strong>GPG 加密协议</strong>：链接携带的是 OpenPGP 密文，需用对应私钥解密后方可验证签名与签署。若协议同时加密至 GPG-CA，CA 私钥亦可解密（数据空间托管）。
+    </div>
+    <div id="decrypt-verify-area"></div>
+    <div class="card">
+      <div class="card-body">
+        <div class="field">
+          <label>GPG 私钥<span class="req">*</span></label>
+          <textarea id="dec-privkey" class="tall" placeholder="-----BEGIN PGP PRIVATE KEY BLOCK-----
+... 粘贴您的私钥 ..."></textarea>
+        </div>
+        <div class="field">
+          <label>私钥密码（如已设置）</label>
+          <input type="password" id="dec-pass" placeholder="无密码则留空">
+        </div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-outline" onclick="goHome()">取消</button>
+      <button class="btn btn-purple btn-lg" id="btn-decrypt" onclick="decryptAgreement()">
+        解密并查阅
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== SIGN (Payee) ===== -->
   <section class="view" id="view-sign">
     <div class="page-head">
       <div class="step">STEP 2 · 收款方签署</div>
@@ -562,7 +749,7 @@
     </div>
   </section>
 
-  <!-- ===== WAITING (PAYEE) ===== -->
+  <!-- ===== WAITING (Payee) ===== -->
   <section class="view" id="view-wait">
     <div class="page-head">
       <div class="step">STEP 3 · 等待收款</div>
@@ -587,18 +774,50 @@
     <div id="mine-list"></div>
   </section>
 
+  <!-- ===== LEDGER (Data Space) ===== -->
+  <section class="view" id="view-ledger">
+    <div class="page-head gpg">
+      <div class="step">数据空间 · 哈希链账本</div>
+      <h2>分布式账本</h2>
+      <p>本机存储的全部协议按 SHA-256 链式记录，创世块为起点。</p>
+    </div>
+    <div id="ledger-chain"></div>
+  </section>
+
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 /* ================================================================
-   P2P Transaction Protocol — Core
-   Uses Web Crypto API: ECDSA P-256 + SHA-256
+   GPG-CA Embedded Trust Root
    ================================================================ */
+const GPG_CA_KEY = `-----BEGIN PGP PUBLIC KEY BLOCK-----
 
+mDMEamdMfxYJKwYBBAHaRw8BAQdAZUTS4h498msUthAuOzqMrn4DzyJo6TiWvUhM
+DPLZa2u0PEpNS3N0dWRpby1tay1kYXRhZm9yLWRhdGFzZXRfR1BHLUNBLTAgPG1h
+a2VlbnRyb3B5QHllYWgubmV0PohyBBMWCAAaBAsJCAcCFQgCFgECGQEFgmpnTH8C
+ngECmwMACgkQ+NqqAyU6c2c2egD/YiB+76NAYjHsFkbMnejIwBoxbzDaTbvGIcbe
+Y2DGZIwBAOz5p9uD4Jr+jVM4l5MTZui3lvDr4N+Z0Kmfd2Q8dJYOuDgEamdMfxIK
+KwYBBAGXVQEFAQEHQK+zxauddypKgHGsDwXY6TvOrU6AF6l669qJK8sU10hVAwEI
+B4h4BBgWCAAJBYJqZ0x/ApsMACEJEPjaqgMlOnNnFiEEIcTnZrtWqPxVCZYj+Nqq
+AyU6c2emuwEAnsKe9uNGUZ9hWgR4DbO8uu2mrGWUx87i3fHVsqM+J40A+gIQ6uED
+EBLdD3WqIKJgCm8GBU74MoIL+Bu+iueRiygH
+=mySC
+-----END PGP PUBLIC KEY BLOCK-----`;
+
+const GENESIS_HASH = '0'.repeat(64);
+let GPG_CA = null;       // parsed CA public key object
+let GPG_CA_FP = '';      // CA fingerprint hex
+
+const CUR_SYMBOLS = {CNY:'¥',USD:'$',EUR:'€',HKD:'HK$',JPY:'¥'};
+
+/* ================================================================
+   P2P Transaction Protocol — Core (ECDSA + SHA-256)
+   ================================================================ */
 const $ = (id) => document.getElementById(id);
 const LS_KEY = 'p2p_agreements';
+const LS_LEDGER = 'p2p_ledger';
 
 /* ---------- Base64URL helpers ---------- */
 function bufToB64(buf){
@@ -631,7 +850,7 @@ function canonicalize(obj){
   return '{' + keys.map(k => JSON.stringify(k)+':'+canonicalize(obj[k])).join(',') + '}';
 }
 
-/* ---------- Crypto: key generation, sign, verify ---------- */
+/* ---------- ECDSA crypto ---------- */
 async function genKeyPair(){
   return crypto.subtle.generateKey(
     { name:'ECDSA', namedCurve:'P-256' },
@@ -670,7 +889,7 @@ async function sha256Hex(str){
 /* ---------- Agreement build ---------- */
 function buildAgreementPayload(form){
   return {
-    v:1,
+    v:2,
     id: crypto.randomUUID ? crypto.randomUUID() : 'ag-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),
     created: new Date().toISOString(),
     payer: form.payer.trim(),
@@ -683,19 +902,93 @@ function buildAgreementPayload(form){
     terms: (form.terms||'').trim()
   };
 }
-/* The "unsigned content" = canonical JSON of payload (no sig fields) */
 function unsignedContent(ag){
   const core = {v:ag.v,id:ag.id,created:ag.created,payer:ag.payer,payee:ag.payee,amount:ag.amount,currency:ag.currency,purpose:ag.purpose,deadline:ag.deadline,method:ag.method,terms:ag.terms};
   return canonicalize(core);
 }
 
-/* ---------- Encode/decode link ---------- */
-function encodeLink(ag){
+/* ================================================================
+   GPG / OpenPGP functions
+   ================================================================ */
+async function parsePubKey(armored){
+  return await openpgp.readKey({ armoredKey: armored.trim() });
+}
+async function getFingerprint(key){
+  return key.getFingerprint().toUpperCase();
+}
+async function gpgEncrypt(dataStr, pubKeys){
+  const message = await openpgp.createMessage({ text: dataStr });
+  const encrypted = await openpgp.encrypt({
+    message,
+    encryptionKeys: pubKeys,
+    format: 'armored'
+  });
+  return encrypted;
+}
+async function gpgDecrypt(armored, privKeyArmored, passphrase){
+  const privateKey = await openpgp.readPrivateKey({ armoredKey: privKeyArmored.trim() });
+  let pk = privateKey;
+  if(passphrase){
+    pk = await openpgp.decryptKey({ privateKey, passphrase });
+  }
+  const message = await openpgp.readMessage({ armoredMessage: armored.trim() });
+  const result = await openpgp.decrypt({
+    message,
+    decryptionKeys: pk
+  });
+  return result.data;
+}
+
+/* ================================================================
+   Local Ledger (Blockchain Data Space) — SHA-256 hash chain
+   ================================================================ */
+function getLedger(){
+  try{ return JSON.parse(localStorage.getItem(LS_LEDGER) || '[]'); }
+  catch(e){ return []; }
+}
+async function appendLedgerAsync(ag){
+  const ledger = getLedger();
+  const prevHash = ledger.length ? ledger[ledger.length-1].chainHash : GENESIS_HASH;
+  const chainHash = await sha256Hex(prevHash + (ag.dig||''));
+  const entry = {
+    idx: ledger.length,
+    id: ag.id,
+    digest: ag.dig || '',
+    prevHash,
+    chainHash,
+    time: new Date().toISOString(),
+    payer: ag.payer,
+    payee: ag.payee,
+    amount: ag.amount,
+    currency: ag.currency,
+    encrypted: !!ag.gpgEncrypted,
+    status: ag.status || 'awaiting_payee'
+  };
+  ledger.push(entry);
+  localStorage.setItem(LS_LEDGER, JSON.stringify(ledger));
+  return entry;
+}
+function updateLedgerStatus(agId, status){
+  const ledger = getLedger();
+  for(let e of ledger){
+    if(e.id === agId) e.status = status;
+  }
+  localStorage.setItem(LS_LEDGER, JSON.stringify(ledger));
+}
+
+/* ================================================================
+   Encode/decode link (plain + encrypted)
+   ================================================================ */
+function encodeLinkPlain(ag){
   const json = canonicalize(ag);
   const b64 = bufToB64(strToBuf(json));
   return location.origin + location.pathname + '#ag=' + b64;
 }
-function decodeLink(){
+function encodeLinkEncrypted(armored){
+  const b64 = bufToB64(strToBuf(armored));
+  return location.origin + location.pathname + '#agp=' + b64;
+}
+function decodePlain(){
   if(!location.hash.startsWith('#ag=')) return null;
   try{
     const b64 = location.hash.slice(4);
@@ -703,8 +996,15 @@ function decodeLink(){
     return JSON.parse(json);
   }catch(e){ return null; }
 }
+function decodeEncrypted(){
+  if(!location.hash.startsWith('#agp=')) return null;
+  try{
+    const b64 = location.hash.slice(5);
+    return new TextDecoder().decode(b64ToBuf(b64));
+  }catch(e){ return null; }
+}
 
-/* ---------- localStorage store ---------- */
+/* ---------- localStorage agreement store ---------- */
 function getStore(){
   try{ return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
   catch(e){ return {}; }
@@ -713,6 +1013,8 @@ function saveAgreement(ag){
   const store = getStore();
   store[ag.id] = ag;
   localStorage.setItem(LS_KEY, JSON.stringify(store));
+  appendLedgerAsync(ag);
+  updateLedgerStatus(ag.id, ag.status || 'awaiting_payee');
 }
 
 /* ================================================================
@@ -732,25 +1034,65 @@ function toast(msg){
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(t._tm);
-  t._tm = setTimeout(()=>t.classList.remove('show'), 2200);
+  t._tm = setTimeout(()=>t.classList.remove('show'), 2400);
 }
-
-/* ---------- Currency symbol ---------- */
-const CUR_SYMBOLS = {CNY:'¥',USD:'$',EUR:'€',HKD:'HK$',JPY:'¥'};
+function toggleGpg(){
+  const on = $('f-gpg').checked;
+  $('gpg-opts').classList.toggle('show', on);
+  if(on){ renderGpgKeyrec(); }
+  else { $('gpg-keyrec').innerHTML = ''; }
+}
+function renderGpgKeyrec(){
+  const rec = $('gpg-keyrec');
+  const caOn = $('f-gpg-ca').checked;
+  let html = '';
+  if(caOn && GPG_CA){
+    html += `<span class="chip ca"><span class="dot"></span>GPG-CA · ${GPG_CA_FP.slice(0,16)}…</span>`;
+  }
+  rec.innerHTML = html;
+}
 function updateCur(){
   const c = $('f-currency').value;
   $('cur-symbol').textContent = CUR_SYMBOLS[c] || '';
 }
+$('f-gpg-ca') && $('f-gpg-ca').addEventListener('change', renderGpgKeyrec);
 
 /* ---------- Date init ---------- */
 (function initDate(){
   const d = new Date();
   d.setDate(d.getDate()+7);
-  $('f-deadline').value = d.toISOString().slice(0,10);
+  const el = $('f-deadline');
+  if(el) el.value = d.toISOString().slice(0,10);
 })();
 
 /* ================================================================
-   Flow 1: Payer creates & signs
+   GPG-CA initialization
+   ================================================================ */
+async function initGpgCa(){
+  const statusEl = $('ca-status');
+  const bodyEl = $('ca-body');
+  try{
+    GPG_CA = await parsePubKey(GPG_CA_KEY);
+    GPG_CA_FP = await getFingerprint(GPG_CA);
+    const uid = GPG_CA.users && GPG_CA.users[0]
+      ? (GPG_CA.users[0].userID ? GPG_CA.users[0].userID.userID : '—')
+      : '—';
+    statusEl.textContent = '已加载 · ' + GPG_CA_FP.slice(0,16) + '…';
+    statusEl.style.color = 'var(--purple)';
+    bodyEl.innerHTML = `
+      <div class="ca-row"><span class="ca-l">用户标识</span><span class="ca-v uid">${esc(uid)}</span></div>
+      <div class="ca-row"><span class="ca-l">指纹</span><span class="ca-v">${GPG_CA_FP}</span></div>
+      <div class="ca-row"><span class="ca-l">算法</span><span class="ca-v">${GPG_CA.keyPacket ? 'EdDSA / OpenPGP' : 'OpenPGP'}</span></div>
+      <div class="ca-row"><span class="ca-l">用途</span><span class="ca-v">数据空间信任根 · 托管加密</span></div>`;
+  }catch(e){
+    statusEl.textContent = '加载失败';
+    statusEl.style.color = 'var(--red)';
+    bodyEl.innerHTML = `<div style="color:var(--red);font-size:13px">GPG-CA 公钥解析失败：${esc(e.message)}</div>`;
+  }
+}
+
+/* ================================================================
+   Flow 1: Payer creates & signs (+ optional GPG)
    ================================================================ */
 async function createAgreement(){
   const form = {
@@ -763,20 +1105,12 @@ async function createAgreement(){
     method: $('f-method').value,
     terms: $('f-terms').value
   };
-  // Validation
-  if(!form.payer || !form.payee){
-    return toast('请填写付款方与收款方名称');
-  }
-  if(!form.amount || parseFloat(form.amount) <= 0){
-    return toast('请输入有效的交易金额');
-  }
-  if(!form.purpose.trim()){
-    return toast('请填写交易用途');
-  }
-  if(!form.deadline){
-    return toast('请选择付款期限');
-  }
+  if(!form.payer || !form.payee) return toast('请填写付款方与收款方名称');
+  if(!form.amount || parseFloat(form.amount) <= 0) return toast('请输入有效的交易金额');
+  if(!form.purpose.trim()) return toast('请填写交易用途');
+  if(!form.deadline) return toast('请选择付款期限');
 
+  const useGpg = $('f-gpg').checked;
   const btn = $('btn-sign-payer');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> 正在生成签名…';
@@ -786,37 +1120,63 @@ async function createAgreement(){
     const content = unsignedContent(payload);
     const digest = await sha256Hex(content);
 
-    // Generate payer keypair
     const kp = await genKeyPair();
     const pubB64 = await exportPubKey(kp.publicKey);
     const sig = await signDigest(kp.privateKey, content);
 
-    const ag = Object.assign({}, payload, {
-      dig: digest,
-      pk: pubB64,
-      sig: sig
-    });
-
-    // Store locally as payer's record
+    const ag = Object.assign({}, payload, { dig: digest, pk: pubB64, sig: sig });
     ag.payerLocal = true;
+
+    let link, encrypted = false;
+    if(useGpg){
+      btn.innerHTML = '<span class="spinner"></span> 正在 GPG 加密…';
+      const caOn = $('f-gpg-ca').checked;
+      const payeeKeyArm = $('f-payee-gpg').value.trim();
+      const recipients = [];
+      if(caOn && GPG_CA) recipients.push(GPG_CA);
+      if(payeeKeyArm){
+        try{
+          const payeeKey = await parsePubKey(payeeKeyArm);
+          recipients.push(payeeKey);
+        }catch(e){
+          return toast('收款方公钥解析失败：'+e.message);
+        }
+      }
+      if(recipients.length === 0){
+        return toast('未提供任何加密公钥，请至少启用 GPG-CA 或粘贴收款方公钥');
+      }
+      const armored = await gpgEncrypt(canonicalize(ag), recipients);
+      ag.gpgEncrypted = true;
+      ag.recipients = recipients.length;
+      link = encodeLinkEncrypted(armored);
+      encrypted = true;
+    }else{
+      link = encodeLinkPlain(ag);
+    }
+
     saveAgreement(ag);
 
-    // Build share link
-    const link = encodeLink(ag);
+    // Share view
     $('share-link').textContent = link;
     $('share-link').title = link;
-    $('share-meta').innerHTML = [
+    $('share-anim').classList.toggle('purple', encrypted);
+    $('share-title').textContent = encrypted ? '协议已签署并 GPG 加密' : '协议已由您签署';
+    $('share-sub').textContent = encrypted
+      ? '链接携带 OpenPGP 密文，仅持私钥方可解密。发给收款方即可。'
+      : '将下方链接发送给收款方，对方打开即可查阅并签署。';
+
+    const meta = [
       chip('协议ID', ag.id.slice(0,12)+'…'),
       chip('金额', CUR_SYMBOLS[ag.currency]+ag.amount),
       chip('期限', ag.deadline),
-      chip('签名曲线', 'P-256')
-    ].join('');
-
-    // Show doc preview
+      chip('签名曲线', 'ECDSA P-256')
+    ];
+    if(encrypted) meta.push(`<span class="meta-chip encrypted">GPG 加密 · ${recipients_count(ag)} 收件方</span>`);
+    $('share-meta').innerHTML = meta.join('');
     $('share-doc-preview').innerHTML = renderDoc(ag, 'awaiting_payee');
 
     showView('view-share');
-    toast('协议已签署，请复制链接发送给收款方');
+    toast(encrypted ? '协议已签署并加密' : '协议已签署，请复制链接发送给收款方');
   }catch(e){
     toast('签署失败：'+e.message);
   }finally{
@@ -824,55 +1184,50 @@ async function createAgreement(){
     btn.innerHTML = '生成密钥并签署';
   }
 }
-
+function recipients_count(ag){ return ag.recipients || 1; }
 function chip(label, val){
   return `<span class="meta-chip">${label}: <strong>${val}</strong></span>`;
 }
 
 async function copyLink(){
   const text = $('share-link').textContent;
-  try{
-    await navigator.clipboard.writeText(text);
-  }catch(e){
-    // Fallback
+  try{ await navigator.clipboard.writeText(text); }
+  catch(e){
     const ta = document.createElement('textarea');
     ta.value = text; document.body.appendChild(ta);
     ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
   }
   $('link-copied').classList.add('show');
   $('btn-copy').textContent = '已复制';
-  setTimeout(()=>{
-    $('link-copied').classList.remove('show');
-    $('btn-copy').textContent = '复制链接';
-  },2000);
+  setTimeout(()=>{ $('link-copied').classList.remove('show'); $('btn-copy').textContent = '复制链接'; },2000);
 }
 
 /* ================================================================
-   Flow 2: Payee opens link & signs
+   Incoming link router (plain vs encrypted)
    ================================================================ */
 async function handleIncomingLink(){
-  const ag = decodeLink();
-  if(!ag){
-    return; // no link, stay on home
+  const enc = decodeEncrypted();
+  if(enc){
+    return handleEncryptedLink(enc);
   }
-  // Verify payer signature
+  const ag = decodePlain();
+  if(ag){
+    return handlePlainLink(ag);
+  }
+}
+
+async function handlePlainLink(ag){
   const verifyArea = $('sign-verify-area');
   const content = unsignedContent(ag);
   let verified = false;
-  try{
-    verified = await verifySig(ag.pk, ag.sig, content);
-  }catch(e){ verified = false; }
+  try{ verified = await verifySig(ag.pk, ag.sig, content); }catch(e){ verified = false; }
 
   if(verified){
     const digest = await sha256Hex(content);
-    const digestOk = (digest === ag.dig);
     verifyArea.innerHTML = `
       <div class="verify-badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-        <div>
-          <strong>付款方签名验证通过</strong>
-          ${digestOk ? ' · 协议摘要一致' : ' · 摘要不一致'}
-        </div>
+        <div><strong>付款方签名验证通过</strong>${digest === ag.dig ? ' · 协议摘要一致' : ' · 摘要不一致'}</div>
       </div>`;
   }else{
     verifyArea.innerHTML = `
@@ -882,15 +1237,60 @@ async function handleIncomingLink(){
       </div>`;
     $('btn-sign-payee').disabled = true;
   }
-
   $('sign-doc-area').innerHTML = renderDoc(ag, 'awaiting_payee');
-  // Pre-fill payee name from agreement
   $('sign-name').value = ag.payee || '';
-  // Store current incoming agreement globally
   window._incoming = ag;
   showView('view-sign');
 }
 
+/* ---------- Encrypted link → decrypt view ---------- */
+function handleEncryptedLink(armored){
+  window._encryptedArmored = armored;
+  $('decrypt-verify-area').innerHTML = `
+    <div class="verify-badge purple">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+      <div><strong>GPG 加密协议</strong> · 已检测到密文载荷，请提供私钥解密</div>
+    </div>`;
+  $('btn-sign-payee').disabled = false;
+  showView('view-decrypt');
+}
+
+async function decryptAgreement(){
+  const armored = window._encryptedArmored;
+  if(!armored) return toast('无加密数据');
+  const privArm = $('dec-privkey').value.trim();
+  const pass = $('dec-pass').value;
+  if(!privArm) return toast('请粘贴 GPG 私钥');
+  const btn = $('btn-decrypt');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 解密中…';
+  try{
+    const json = await gpgDecrypt(armored, privArm, pass);
+    const ag = JSON.parse(json);
+    $('decrypt-verify-area').innerHTML = `
+      <div class="verify-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+        <div><strong>GPG 解密成功</strong> · 正在校验签名…</div>
+      </div>`;
+    // Verify and proceed to sign
+    await handlePlainLink(ag);
+    toast('解密成功，请查阅并签署');
+  }catch(e){
+    $('decrypt-verify-area').innerHTML = `
+      <div class="verify-badge error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+        <div><strong>解密失败</strong> · ${esc(e.message)}</div>
+      </div>`;
+    toast('解密失败：'+e.message);
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = '解密并查阅';
+  }
+}
+
+/* ================================================================
+   Flow 2: Payee signs
+   ================================================================ */
 async function signAsPayee(){
   const ag = window._incoming;
   if(!ag) return toast('协议数据丢失，请重新打开链接');
@@ -899,33 +1299,24 @@ async function signAsPayee(){
   if(name !== ag.payee){
     if(!confirm('您输入的名称与协议中的收款方名称不一致，确定继续签署吗？')) return;
   }
-
   const btn = $('btn-sign-payee');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> 正在签署…';
-
   try{
     const content = unsignedContent(ag);
-    // Verify again before signing
     const ok = await verifySig(ag.pk, ag.sig, content);
     if(!ok) return toast('付款方签名验证失败，已中止');
-
-    // Generate payee keypair & sign
     const kp = await genKeyPair();
     const pubB64 = await exportPubKey(kp.publicKey);
     const sig = await signDigest(kp.privateKey, content);
-
     const executed = Object.assign({}, ag, {
-      psk: pubB64,
-      psig: sig,
+      psk: pubB64, psig: sig,
       signedAt: new Date().toISOString(),
       status: 'executed'
     });
     delete executed.payerLocal;
     saveAgreement(executed);
     window._incoming = null;
-
-    // Clear hash, go to waiting
     history.replaceState(null,'',location.pathname);
     renderWaitView(executed.id);
     toast('协议已生效，进入等待收款状态');
@@ -943,10 +1334,7 @@ async function signAsPayee(){
 function renderWaitView(agId){
   const store = getStore();
   const ag = store[agId];
-  if(!ag){
-    showView('view-home');
-    return toast('未找到该协议');
-  }
+  if(!ag){ showView('view-home'); return toast('未找到该协议'); }
   window._currentAgId = agId;
   $('wait-doc-area').innerHTML = renderDoc(ag, 'executed');
   updateCountdown();
@@ -967,28 +1355,13 @@ function updateCountdown(){
     const diff = deadline - now;
     const expired = diff <= 0;
     const paid = ag.status === 'paid';
-
     let html = '';
     if(paid){
-      html = `
-        <div class="countdown-bar" style="background:var(--green-bg);border-color:#c8e0c8">
-          <div class="cd-icon" style="color:var(--green)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
-          </div>
-          <div class="cd-text" style="color:var(--green)"><strong>款项已结清</strong>本协议已完成。</div>
-        </div>`;
-      $('btn-mark-paid') && ($('btn-mark-paid').style.display='none');
+      html = `<div class="countdown-bar paid"><div class="cd-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg></div><div class="cd-text" style="color:var(--green)"><strong>款项已结清</strong>本协议已完成。</div></div>`;
       clearInterval(_countdownTimer);
     } else if(expired){
       const days = Math.floor(Math.abs(diff)/86400000);
-      html = `
-        <div class="countdown-bar expired">
-          <div class="cd-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-          </div>
-          <div class="cd-text"><strong>已超过付款期限 ${days} 天</strong>请与付款方确认或采取进一步措施。</div>
-          <div class="cd-time">逾期 ${days}d</div>
-        </div>`;
+      html = `<div class="countdown-bar expired"><div class="cd-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div><div class="cd-text"><strong>已超过付款期限 ${days} 天</strong>请与付款方确认或采取进一步措施。</div><div class="cd-time">逾期 ${days}d</div></div>`;
     } else {
       const d = Math.floor(diff/86400000);
       const h = Math.floor(diff%86400000/3600000);
@@ -996,19 +1369,9 @@ function updateCountdown(){
       const s = Math.floor(diff%60000/1000);
       const total = new Date(ag.deadline+'T23:59:59').getTime() - new Date(ag.signedAt || ag.created).getTime();
       const pct = Math.max(0, Math.min(100, (1 - diff/total) * 100));
-      html = `
-        <div class="countdown-bar">
-          <div class="cd-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-          </div>
-          <div class="cd-text"><strong>等待付款方付款</strong>距付款期限还有</div>
-          <div class="cd-time">${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div>
-        </div>
-        <div class="wait-progress"><div class="bar" style="width:${pct}%"></div></div>`;
+      html = `<div class="countdown-bar"><div class="cd-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div><div class="cd-text"><strong>等待付款方付款</strong>距付款期限还有</div><div class="cd-time">${d}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div></div><div class="wait-progress"><div class="bar" style="width:${pct}%"></div></div>`;
     }
     $('wait-countdown').innerHTML = html;
-
-    // Also refresh doc status if needed
     const docArea = $('wait-doc-area');
     if(docArea && docArea.querySelector('.doc')){
       docArea.innerHTML = renderDoc(ag, paid ? 'paid' : (expired ? 'expired' : 'executed'));
@@ -1027,6 +1390,7 @@ function markPaid(){
     store[agId].status = 'paid';
     store[agId].paidAt = new Date().toISOString();
     localStorage.setItem(LS_KEY, JSON.stringify(store));
+    updateLedgerStatus(agId, 'paid');
     updateCountdown();
     toast('协议已标记为已结清');
   }
@@ -1039,7 +1403,6 @@ function checkPending(){
   const store = getStore();
   const ids = Object.keys(store);
   const mine = ids.filter(id => store[id].psig && !store[id].payerLocal);
-
   if(mine.length === 0){
     $('mine-list').innerHTML = `
       <div class="empty-state">
@@ -1049,30 +1412,65 @@ function checkPending(){
     showView('view-mine');
     return;
   }
-
   const list = mine.map(id => {
     const ag = store[id];
     const deadline = new Date(ag.deadline+'T23:59:59').getTime();
     const expired = deadline < Date.now() && ag.status !== 'paid';
-    const statusClass = ag.status === 'paid' ? 'paid' : (expired ? 'expired' : 'awaiting');
-    const statusText = ag.status === 'paid' ? '已结清' : (expired ? '已逾期' : '等待收款');
-    return `
-      <div class="card" style="margin-bottom:14px;cursor:pointer" onclick="renderWaitView('${id}')">
-        <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-          <div>
-            <div style="font-size:11px;font-family:var(--mono);color:var(--ink-faint);margin-bottom:3px">${ag.id.slice(0,16)}…</div>
-            <div style="font-size:15px;font-weight:600">${CUR_SYMBOLS[ag.currency]||''}${ag.amount} · ${ag.payer} → ${ag.payee}</div>
-            <div style="font-size:12px;color:var(--ink-soft);margin-top:3px">${ag.purpose}</div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <span class="status-pill ${statusClass}">${statusText}</span>
-            <div style="font-size:11px;color:var(--ink-faint);margin-top:6px">期限 ${ag.deadline}</div>
-          </div>
+    const sc = ag.status === 'paid' ? 'paid' : (expired ? 'expired' : 'awaiting');
+    const st = ag.status === 'paid' ? '已结清' : (expired ? '已逾期' : '等待收款');
+    return `<div class="card" style="margin-bottom:14px;cursor:pointer" onclick="renderWaitView('${id}')">
+      <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <div>
+          <div style="font-size:11px;font-family:var(--mono);color:var(--ink-faint);margin-bottom:3px">${ag.id.slice(0,16)}…${ag.gpgEncrypted?' · GPG':''}</div>
+          <div style="font-size:15px;font-weight:600">${CUR_SYMBOLS[ag.currency]||''}${ag.amount} · ${esc(ag.payer)} → ${esc(ag.payee)}</div>
+          <div style="font-size:12px;color:var(--ink-soft);margin-top:3px">${esc(ag.purpose)}</div>
         </div>
-      </div>`;
+        <div style="text-align:right;flex-shrink:0">
+          <span class="status-pill ${sc}">${st}</span>
+          <div style="font-size:11px;color:var(--ink-faint);margin-top:6px">期限 ${ag.deadline}</div>
+        </div>
+      </div>
+    </div>`;
   }).join('');
   $('mine-list').innerHTML = list;
   showView('view-mine');
+}
+
+/* ================================================================
+   Ledger (Data Space) view
+   ================================================================ */
+function showLedger(){
+  const ledger = getLedger();
+  const chainEl = $('ledger-chain');
+  if(ledger.length === 0){
+    chainEl.innerHTML = `
+      <div class="block genesis">
+        <div class="block-head"><span class="block-idx">GENESIS #0</span><span class="block-time">${fmtTime(new Date().toISOString())}</span></div>
+        <div class="block-hash"><span class="lbl">prev:</span> ${GENESIS_HASH}<br><span class="lbl">chain:</span> ${GENESIS_HASH}</div>
+        <div class="block-summary">数据空间账本已初始化，暂无协议记录。</div>
+      </div>
+      <div class="empty-state"><p>发起首份协议以写入账本。</p></div>`;
+    showView('view-ledger');
+    return;
+  }
+  // Genesis + entries
+  let html = `<div class="block genesis">
+    <div class="block-head"><span class="block-idx">GENESIS #0</span><span class="block-time">—</span></div>
+    <div class="block-hash"><span class="lbl">prev:</span> ${GENESIS_HASH}</div>
+  </div>`;
+  ledger.forEach((e, i) => {
+    const statusBadge = e.status === 'paid' ? '<span class="block-badge paid">已结清</span>'
+      : e.status === 'executed' ? '<span class="block-badge exec">已生效</span>' : '';
+    const encBadge = e.encrypted ? '<span class="block-badge enc">GPG 加密</span>' : '';
+    html += `<div class="block">
+      <div class="block-head"><span class="block-idx">#${i+1}</span><span class="block-time">${fmtTime(e.time)}</span></div>
+      <div class="block-hash"><span class="lbl">协议:</span> ${esc(e.id)}<br><span class="lbl">摘要:</span> ${e.digest}<br><span class="lbl">prev:</span> ${e.prevHash}<br><span class="lbl">chain:</span> ${e.chainHash}</div>
+      <div class="block-summary"><strong>${CUR_SYMBOLS[e.currency]||''}${e.amount}</strong> · ${esc(e.payer)} → ${esc(e.payee)}</div>
+      <div class="block-badges">${encBadge}${statusBadge}</div>
+    </div>`;
+  });
+  chainEl.innerHTML = html;
+  showView('view-ledger');
 }
 
 /* ================================================================
@@ -1083,17 +1481,15 @@ function renderDoc(ag, phase){
   const expired = deadline < Date.now() && phase !== 'paid';
   const paid = ag.status === 'paid' || phase === 'paid';
   const executed = !!ag.psig;
-
   let statusPill = '';
-  if(paid){
-    statusPill = '<span class="status-pill paid">已结清</span>';
-  } else if(expired){
-    statusPill = '<span class="status-pill expired">已逾期</span>';
-  } else if(executed){
-    statusPill = '<span class="status-pill executed">已生效</span>';
-  } else {
-    statusPill = '<span class="status-pill awaiting">待收款方签署</span>';
-  }
+  if(paid) statusPill = '<span class="status-pill paid">已结清</span>';
+  else if(expired) statusPill = '<span class="status-pill expired">已逾期</span>';
+  else if(executed) statusPill = '<span class="status-pill executed">已生效</span>';
+  else statusPill = '<span class="status-pill awaiting">待收款方签署</span>';
+
+  const encBadge = ag.gpgEncrypted
+    ? `<div style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-family:var(--mono);color:var(--purple);background:var(--purple-bg);padding:3px 8px;border-radius:4px;margin-left:8px">GPG 加密</div>`
+    : '';
 
   const payerSigBlock = ag.sig ? `
     <div class="sig-block signed">
@@ -1104,11 +1500,7 @@ function renderDoc(ag, phase){
         <div class="row"><span>公钥(SPKI)</span><span>${ag.pk.slice(0,20)}…</span></div>
         <div class="row"><span>签名值</span><span>${ag.sig.slice(0,20)}…</span></div>
       </div>
-    </div>` : `
-    <div class="sig-block">
-      <div class="sig-role">付款方签名</div>
-      <div class="sig-pending"><div class="dot-anim"></div>待签署</div>
-    </div>`;
+    </div>` : `<div class="sig-block"><div class="sig-role">付款方签名</div><div class="sig-pending"><div class="dot-anim"></div>待签署</div></div>`;
 
   const payeeSigBlock = ag.psig ? `
     <div class="sig-block signed">
@@ -1119,59 +1511,42 @@ function renderDoc(ag, phase){
         <div class="row"><span>公钥(SPKI)</span><span>${ag.psk.slice(0,20)}…</span></div>
         <div class="row"><span>签名值</span><span>${ag.psig.slice(0,20)}…</span></div>
       </div>
-    </div>` : `
-    <div class="sig-block">
-      <div class="sig-role">收款方签名</div>
-      <div class="sig-pending"><div class="dot-anim"></div>待签署</div>
-    </div>`;
+    </div>` : `<div class="sig-block"><div class="sig-role">收款方签名</div><div class="sig-pending"><div class="dot-anim"></div>待签署</div></div>`;
 
-  const termsBlock = ag.terms ? `
-    <div class="doc-section">
-      <h4>补充条款</h4>
-      <div class="doc-terms">${esc(ag.terms)}</div>
-    </div>` : '';
+  const termsBlock = ag.terms ? `<div class="doc-section"><h4>补充条款</h4><div class="doc-terms">${esc(ag.terms)}</div></div>` : '';
+  const digestBlock = ag.dig ? `<div class="doc-section"><h4>协议摘要 (SHA-256)</h4><div style="font-family:var(--mono);font-size:11px;color:var(--ink-soft);word-break:break-all;background:var(--bg);padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--line)">${ag.dig}</div></div>` : '';
 
-  const digestBlock = ag.dig ? `
-    <div class="doc-section">
-      <h4>协议摘要 (SHA-256)</h4>
-      <div style="font-family:var(--mono);font-size:11px;color:var(--ink-soft);word-break:break-all;background:var(--bg);padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--line)">${ag.dig}</div>
-    </div>` : '';
-
-  return `
-    <div class="doc">
-      <div class="doc-head">
-        <div class="doc-id">协议 ID: ${ag.id}</div>
-        <h3>P2P 交易协议</h3>
-        ${statusPill}
-      </div>
-      <div class="doc-body">
-        <div class="doc-section">
-          <h4>交易要素</h4>
-          <div class="doc-grid">
-            <div class="doc-field"><div class="lbl">付款方</div><div class="val">${esc(ag.payer)}</div></div>
-            <div class="doc-field"><div class="lbl">收款方</div><div class="val">${esc(ag.payee)}</div></div>
-            <div class="doc-field" style="grid-column:1/-1"><div class="lbl">交易金额</div><div class="val big">${CUR_SYMBOLS[ag.currency]||''}${ag.amount} <span style="font-size:13px;color:var(--ink-faint);font-family:var(--sans);font-weight:400">${ag.currency}</span></div></div>
-            <div class="doc-field"><div class="lbl">交易用途</div><div class="val">${esc(ag.purpose)}</div></div>
-            <div class="doc-field"><div class="lbl">付款方式</div><div class="val">${esc(ag.method)}</div></div>
-            <div class="doc-field"><div class="lbl">付款期限</div><div class="val mono">${ag.deadline}</div></div>
-            <div class="doc-field"><div class="lbl">创建时间</div><div class="val mono">${fmtTime(ag.created)}</div></div>
-          </div>
-        </div>
-        ${termsBlock}
-        ${digestBlock}
-        <div class="doc-section">
-          <h4>数字签名</h4>
-          <div class="sig-blocks">
-            ${payerSigBlock}
-            ${payeeSigBlock}
-          </div>
+  return `<div class="doc">
+    <div class="doc-head">
+      <div class="doc-id">协议 ID: ${ag.id}</div>
+      <h3>P2P 交易协议</h3>
+      <div>${statusPill}${encBadge}</div>
+    </div>
+    <div class="doc-body">
+      <div class="doc-section">
+        <h4>交易要素</h4>
+        <div class="doc-grid">
+          <div class="doc-field"><div class="lbl">付款方</div><div class="val">${esc(ag.payer)}</div></div>
+          <div class="doc-field"><div class="lbl">收款方</div><div class="val">${esc(ag.payee)}</div></div>
+          <div class="doc-field" style="grid-column:1/-1"><div class="lbl">交易金额</div><div class="val big">${CUR_SYMBOLS[ag.currency]||''}${ag.amount} <span style="font-size:13px;color:var(--ink-faint);font-family:var(--sans);font-weight:400">${ag.currency}</span></div></div>
+          <div class="doc-field"><div class="lbl">交易用途</div><div class="val">${esc(ag.purpose)}</div></div>
+          <div class="doc-field"><div class="lbl">付款方式</div><div class="val">${esc(ag.method)}</div></div>
+          <div class="doc-field"><div class="lbl">付款期限</div><div class="val mono">${ag.deadline}</div></div>
+          <div class="doc-field"><div class="lbl">创建时间</div><div class="val mono">${fmtTime(ag.created)}</div></div>
         </div>
       </div>
-    </div>`;
+      ${termsBlock}
+      ${digestBlock}
+      <div class="doc-section">
+        <h4>数字签名</h4>
+        <div class="sig-blocks">${payerSigBlock}${payeeSigBlock}</div>
+      </div>
+    </div>
+  </div>`;
 }
 
 /* ---------- Utils ---------- */
-function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtTime(iso){
   try{
     const d = new Date(iso);
@@ -1181,15 +1556,16 @@ function fmtTime(iso){
 }
 
 /* ================================================================
-   Init: check for incoming link on load
+   Init
    ================================================================ */
 window.addEventListener('load', () => {
-  if(location.hash.startsWith('#ag=')){
+  initGpgCa();
+  if(location.hash.startsWith('#ag=') || location.hash.startsWith('#agp=')){
     handleIncomingLink();
   }
 });
 window.addEventListener('hashchange', () => {
-  if(location.hash.startsWith('#ag=')){
+  if(location.hash.startsWith('#ag=') || location.hash.startsWith('#agp=')){
     handleIncomingLink();
   }
 });
